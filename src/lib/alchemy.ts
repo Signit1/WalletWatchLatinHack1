@@ -13,16 +13,30 @@ export interface AlchemyAnalysisResponse {
 }
 
 export async function analyzeWithAlchemy(address: string): Promise<AlchemyAnalysisResponse> {
-  const res = await fetch('http://localhost:4000/api/alchemy/analyze', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ address })
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || 'Alchemy API error');
+  try {
+    console.log('🔍 Alchemy: Iniciando análisis para', address);
+    
+    const res = await fetch('http://localhost:4000/api/alchemy/analyze', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ address })
+    });
+    
+    console.log('🔍 Alchemy: Respuesta recibida', res.status, res.statusText);
+    
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('❌ Alchemy: Error HTTP', res.status, text);
+      throw new Error(text || 'Alchemy API error');
+    }
+    
+    const data = await res.json();
+    console.log('✅ Alchemy: Datos recibidos', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Alchemy: Error completo', error);
+    throw error;
   }
-  return res.json();
 }
 
 

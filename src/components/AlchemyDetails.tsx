@@ -13,8 +13,11 @@ function formatWeiToEth(weiHex: string): string {
   }
 }
 
-export default function AlchemyDetails({ data }: { data: AlchemyAnalysisResponse }): JSX.Element {
-  return (
+export default function AlchemyDetails({ data }: { data: AlchemyAnalysisResponse }): React.JSX.Element {
+  console.log('🔍 AlchemyDetails: Renderizando con datos:', data);
+  
+  try {
+    return (
     <div className="mt-3 text-sm text-muted">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-[#0f1523] border border-[#263042] rounded-xl p-3">
@@ -24,9 +27,14 @@ export default function AlchemyDetails({ data }: { data: AlchemyAnalysisResponse
             <div className="mt-1">
               <div className="font-semibold">ERC-20 (top 5)</div>
               <ul className="list-disc ml-5 mt-1 space-y-1">
-                {data.erc20Balances.map((t, i) => (
-                  <li key={`${t.contractAddress}-${i}`}>{t.contractAddress.slice(0, 6)}…{t.contractAddress.slice(-4)} — {t.tokenBalance}</li>
-                ))}
+                {data.erc20Balances.slice(0, 5).map((t, i) => {
+                  console.log('🔍 Renderizando token:', t);
+                  return (
+                    <li key={`${t.contractAddress}-${i}`}>
+                      {t.contractAddress?.slice(0, 6)}…{t.contractAddress?.slice(-4)} — {t.tokenBalance || '0'}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ) : (
@@ -45,16 +53,27 @@ export default function AlchemyDetails({ data }: { data: AlchemyAnalysisResponse
         <div className="bg-[#0f1523] border border-[#263042] rounded-xl p-3 mt-3">
           <div className="font-semibold mb-1">Últimas transferencias</div>
           <ul className="space-y-1">
-            {data.transfersPreview.map((t, i) => (
-              <li key={`${t.hash}-${i}`} className="break-all">
-                <span className="font-semibold">{t.category || 'transferencia'}:</span> {t.from?.slice(0,6)}… → {t.to?.slice(0,6)}… {t.value ? `(${t.value} ${t.asset || ''})` : ''}
-              </li>
-            ))}
+            {data.transfersPreview.slice(0, 5).map((t, i) => {
+              console.log('🔍 Renderizando transferencia:', t);
+              return (
+                <li key={`${t.hash}-${i}`} className="break-all">
+                  <span className="font-semibold">{t.category || 'transferencia'}:</span> {t.from?.slice(0,6)}… → {t.to?.slice(0,6)}… {t.value ? `(${t.value} ${t.asset || ''})` : ''}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
     </div>
-  );
+    );
+  } catch (error) {
+    console.error('❌ AlchemyDetails: Error renderizando:', error);
+    return (
+      <div className="mt-3 text-sm text-red-400">
+        Error renderizando detalles de Alchemy: {error instanceof Error ? error.message : 'Error desconocido'}
+      </div>
+    );
+  }
 }
 
 

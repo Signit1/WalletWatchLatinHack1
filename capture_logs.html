@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capturador de Logs - AML Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .log-container {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .error { color: #ff6b6b; }
+        .success { color: #51cf66; }
+        .info { color: #74c0fc; }
+        .warning { color: #ffd43b; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: #333;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Capturador de Logs - AML Analyzer</h1>
+    
+    <div class="container">
+        <h2>Instrucciones:</h2>
+        <ol>
+            <li>Ingresa la dirección problemática abajo</li>
+            <li>Haz clic en "Iniciar Captura"</li>
+            <li>Ve a la aplicación principal en <a href="http://localhost:3002" target="_blank">http://localhost:3002</a></li>
+            <li>Analiza la dirección</li>
+            <li>Regresa aquí y haz clic en "Ver Logs Capturados"</li>
+            <li>Copia los logs y compártelos</li>
+        </ol>
+    </div>
+
+    <div class="container">
+        <h2>Dirección a Analizar:</h2>
+        <input type="text" id="address" value="0x690b9a9e9aa1c9db991c7721a92d351db4fac990" placeholder="Ingresa la dirección Ethereum">
+        <br>
+        <button onclick="startCapture()">🚀 Iniciar Captura</button>
+        <button onclick="viewLogs()">📋 Ver Logs Capturados</button>
+        <button onclick="clearLogs()">🗑️ Limpiar Logs</button>
+        <button onclick="copyLogs()">📋 Copiar Logs</button>
+    </div>
+
+    <div class="container">
+        <h2>Logs Capturados:</h2>
+        <div id="logs" class="log-container">Los logs aparecerán aquí...</div>
+    </div>
+
+    <script>
+        let logs = [];
+        let isCapturing = false;
+
+        // Interceptar console.log, console.error, etc.
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const originalInfo = console.info;
+
+        function addLog(type, message, ...args) {
+            if (!isCapturing) return;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = {
+                timestamp,
+                type,
+                message: typeof message === 'string' ? message : JSON.stringify(message),
+                args: args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg))
+            };
+            
+            logs.push(logEntry);
+            updateLogDisplay();
+        }
+
+        function startCapture() {
+            isCapturing = true;
+            logs = [];
+            
+            console.log = function(message, ...args) {
+                originalLog.apply(console, arguments);
+                addLog('log', message, ...args);
+            };
+            
+            console.error = function(message, ...args) {
+                originalError.apply(console, arguments);
+                addLog('error', message, ...args);
+            };
+            
+            console.warn = function(message, ...args) {
+                originalWarn.apply(console, arguments);
+                addLog('warn', message, ...args);
+            };
+            
+            console.info = function(message, ...args) {
+                originalInfo.apply(console, arguments);
+                addLog('info', message, ...args);
+            };
+            
+            alert('✅ Captura iniciada! Ahora ve a la aplicación principal y analiza la dirección.');
+        }
+
+        function viewLogs() {
+            updateLogDisplay();
+        }
+
+        function clearLogs() {
+            logs = [];
+            document.getElementById('logs').textContent = 'Los logs aparecerán aquí...';
+        }
+
+        function copyLogs() {
+            const logText = logs.map(log => 
+                `[${log.timestamp}] ${log.type.toUpperCase()}: ${log.message} ${log.args.join(' ')}`
+            ).join('\n');
+            
+            navigator.clipboard.writeText(logText).then(() => {
+                alert('✅ Logs copiados al portapapeles!');
+            }).catch(() => {
+                // Fallback para navegadores que no soportan clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = logText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('✅ Logs copiados al portapapeles!');
+            });
+        }
+
+        function updateLogDisplay() {
+            const logsContainer = document.getElementById('logs');
+            const logText = logs.map(log => {
+                const className = log.type === 'error' ? 'error' : 
+                                log.type === 'warn' ? 'warning' : 
+                                log.type === 'info' ? 'info' : 'success';
+                return `<span class="${className}">[${log.timestamp}] ${log.type.toUpperCase()}: ${log.message} ${log.args.join(' ')}</span>`;
+            }).join('\n');
+            
+            logsContainer.innerHTML = logText;
+        }
+
+        // Interceptar errores no capturados
+        window.addEventListener('error', function(e) {
+            addLog('error', `Error no capturado: ${e.message} en ${e.filename}:${e.lineno}`);
+        });
+
+        window.addEventListener('unhandledrejection', function(e) {
+            addLog('error', `Promise rechazada: ${e.reason}`);
+        });
+    </script>
+</body>
+</html>

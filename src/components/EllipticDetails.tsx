@@ -7,8 +7,11 @@ function riskClass(risk: 'high' | 'medium' | 'low'): string {
   return 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/40';
 }
 
-export default function EllipticDetails({ data }: { data: EllipticAnalysisResponse }): JSX.Element {
-  return (
+export default function EllipticDetails({ data }: { data: EllipticAnalysisResponse }): React.JSX.Element {
+  console.log('🔍 EllipticDetails: Renderizando con datos:', data);
+  
+  try {
+    return (
     <div className="mt-3 text-sm text-muted">
       <div className="flex items-center gap-2">
         <div className={`text-xs inline-flex items-center gap-2 px-2 py-1 rounded-full ring-1 ${riskClass(data.risk)}`}>
@@ -39,7 +42,15 @@ export default function EllipticDetails({ data }: { data: EllipticAnalysisRespon
         )}
       </div>
     </div>
-  );
+    );
+  } catch (error) {
+    console.error('❌ EllipticDetails: Error renderizando:', error);
+    return (
+      <div className="mt-3 text-sm text-red-400">
+        Error renderizando detalles de Elliptic: {error instanceof Error ? error.message : 'Error desconocido'}
+      </div>
+    );
+  }
 }
 
 
