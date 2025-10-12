@@ -149,7 +149,7 @@ export default function WalletExamples({ onSelectWallet }: WalletExamplesProps):
           La aplicación cambiará automáticamente a la pestaña de análisis con la wallet seleccionada.
           <br /><br />
           <strong>📝 Nota:</strong> Además de estos ejemplos, puedes analizar <strong>cualquier wallet de Ethereum</strong> 
-          ingresando su dirección en la pestaña de análisis.
+          <br />ingresando su dirección en la pestaña de análisis.
         </p>
       </div>
 
