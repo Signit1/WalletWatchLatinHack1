@@ -1,80 +1,55 @@
 import React from 'react';
-import { EtherscanAnalysisResponse } from '../lib/etherscan';
+import type { EtherscanAnalysisResponse } from '../lib/etherscan';
 
-export default function EtherscanDetails({ data }: { data: EtherscanAnalysisResponse }): React.JSX.Element {
-  try {
-    return (
-      <div className="mt-3 text-sm space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <span className="text-gray-400">Balance ETH:</span>
-            <span className="ml-2 font-mono text-blue-400">{data.ethBalance} ETH</span>
-          </div>
-          <div>
-            <span className="text-gray-400">Transacciones:</span>
-            <span className="ml-2 font-mono text-green-400">{(data.transactionCount || 0).toLocaleString()}</span>
-          </div>
-        </div>
+export default function EtherscanDetails({ data }: { data: EtherscanAnalysisResponse }): JSX.Element {
+  return (
+    <div className="mt-3 text-sm text-muted">
+      <div className="bg-[#0f1523] border border-[#263042] rounded-xl p-3">
+        <div className="font-semibold mb-1">Etherscan</div>
+        <div><span className="font-semibold">Sanciones:</span> {data.sanctionsHit ? 'Posible match' : 'No detectado'}</div>
+        <div className="mt-1"><span className="font-semibold">Score:</span> {data.riskScore}/100 — {data.risk.toUpperCase()}</div>
         
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <span className="text-gray-400">Tipo:</span>
-            <span className={`ml-2 px-2 py-1 rounded text-xs ${
-              data.isContract 
-                ? 'bg-purple-900/20 text-purple-400 border border-purple-500/50' 
-                : 'bg-blue-900/20 text-blue-400 border border-blue-500/50'
-            }`}>
-              {data.isContract ? 'Contrato' : 'Wallet EOA'}
-            </span>
-          </div>
-          <div>
-            <span className="text-gray-400">Gas Promedio:</span>
-            <span className="ml-2 font-mono text-yellow-400">{parseInt(data.gasUsed || '0').toLocaleString()}</span>
-          </div>
-        </div>
-
-        {data.lastTransaction && (
-          <div>
-            <span className="text-gray-400">Última TX:</span>
-            <span className="ml-2 font-mono text-gray-300">
-              {new Date(data.lastTransaction).toLocaleDateString()}
-            </span>
+        {data.balance !== undefined && (
+          <div className="mt-1"><span className="font-semibold">Balance ETH:</span> {data.balance.toFixed(4)} ETH</div>
+        )}
+        
+        {data.totalTransactions !== undefined && (
+          <div className="mt-1"><span className="font-semibold">Total TXs:</span> {data.totalTransactions}</div>
+        )}
+        
+        {data.normalTransactions !== undefined && data.internalTransactions !== undefined && data.tokenTransactions !== undefined && (
+          <div className="mt-1">
+            <span className="font-semibold">Desglose:</span> {data.normalTransactions} normales, {data.internalTransactions} internas, {data.tokenTransactions} tokens
           </div>
         )}
-
-        {data.categories && data.categories.length > 0 && (
-          <div>
-            <span className="text-gray-400">Categorías:</span>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {data.categories.map((category, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-xs"
-                >
-                  {category}
-                </span>
-              ))}
-            </div>
+        
+        {data.categories?.length ? (
+          <div className="mt-2">
+            <div className="font-semibold">Categorías</div>
+            <ul className="list-disc ml-5 space-y-1">
+              {data.categories.map((c, i) => <li key={`${c}-${i}`}>{c}</li>)}
+            </ul>
           </div>
-        )}
-
-        {data.sanctionsHit && (
-          <div className="p-2 bg-red-900/20 border border-red-500/50 rounded text-red-300 text-xs">
-            ⚠️ Dirección sancionada detectada
+        ) : null}
+        
+        {data.exposure?.length ? (
+          <div className="mt-2">
+            <div className="font-semibold">Exposure</div>
+            <ul className="list-disc ml-5 space-y-1">
+              {data.exposure.map((e, i) => <li key={`${e.type}-${i}`}>{e.type}: {e.percent}%</li>)}
+            </ul>
           </div>
-        )}
-
-        <div className="text-xs text-gray-500 mt-2">
-          {data.notes}
-        </div>
+        ) : null}
+        
+        {data.riskFactors?.length ? (
+          <div className="mt-2">
+            <div className="font-semibold">Factores de Riesgo</div>
+            <ul className="list-disc ml-5 space-y-1">
+              {data.riskFactors.map((f, i) => <li key={`${f}-${i}`} className="text-yellow-400">{f}</li>)}
+            </ul>
+          </div>
+        ) : null}
       </div>
-    );
-  } catch (error) {
-    console.error('❌ EtherscanDetails: Error renderizando:', error);
-    return (
-      <div className="mt-3 text-sm text-red-400">
-        Error renderizando detalles de Etherscan: {error instanceof Error ? error.message : 'Error desconocido'}
-      </div>
-    );
-  }
+    </div>
+  );
 }
