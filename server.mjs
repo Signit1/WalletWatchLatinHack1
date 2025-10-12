@@ -27,6 +27,7 @@ const OFAC_API_KEY = process.env.OFAC_API_KEY;
 const OFAC_API_URL = process.env.OFAC_API_URL; // e.g., https://ofac-api.com/v1/screen
 const CHAINALYSIS_API_KEY = process.env.CHAINALYSIS_API_KEY;
 const CHAINALYSIS_API_URL = process.env.CHAINALYSIS_API_URL; // e.g., https://public.chainalysis.com/api/v1/screen
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || 'YourApiKeyToken'; // Etherscan API key
 
 app.use(cors());
 app.use(express.json());
@@ -245,6 +246,65 @@ async function initializeOFAC() {
 // Inicializar OFAC al arrancar
 initializeOFAC();
 
+// Función centralizada para determinar el riesgo de una wallet
+function getWalletRiskProfile(address) {
+  const normalizedAddress = address.toLowerCase();
+  
+  // Wallets famosas conocidas - riesgo bajo
+  const famousWallets = [
+    '0xab5801a7d398351b8be11c439e05c5b3259aec9b', // Vitalik Buterin
+    '0x000000000000000000000000000000000000dEaD',   // Burn address
+    '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE', // Binance
+    '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'  // Uniswap V2
+  ];
+  
+  // Wallets de medio riesgo específicas
+  const mediumRiskWallets = [
+    '0x8589427373d6d84e98730d7795d8f6f8731fda16',  // NFT Collector
+    '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984'   // Uniswap Token
+  ];
+  
+  // Builders conocidos - riesgo bajo
+  const knownBuilders = [
+    '0x690b9a9e9aa1c9db991c7721a92d351db4fac990', // Flashbots Builder
+    '0x0000000000000000000000000000000000000000'   // Otros builders
+  ];
+  
+  const isFamousWallet = famousWallets.includes(normalizedAddress);
+  const isMediumRiskWallet = mediumRiskWallets.includes(normalizedAddress);
+  const isKnownBuilder = knownBuilders.includes(normalizedAddress);
+  
+  // Determinar score y riesgo
+  let score, risk;
+  if (isMediumRiskWallet) {
+    score = 55; // Medio riesgo
+    risk = 'medium';
+  } else if (isKnownBuilder) {
+    score = 5; // Riesgo mínimo para Builders
+    risk = 'low';
+  } else if (isFamousWallet) {
+    score = 25; // Bajo riesgo
+    risk = 'low';
+  } else {
+    // Score por defecto basado en hash para consistencia
+    let hash = 0; 
+    for (let i = 0; i < address.length; i++) {
+      hash = (hash * 31 + address.charCodeAt(i)) | 0;
+    }
+    const base = Math.abs(hash) % 100;
+    score = Math.min(10 + (base * 0.5), 60);
+    risk = score >= 40 ? 'medium' : 'low';
+  }
+  
+  return {
+    score,
+    risk,
+    isFamousWallet,
+    isMediumRiskWallet,
+    isBuilder: isKnownBuilder
+  };
+}
+
 app.get('/health', (_req, res) => {
   res.json({ ok: true });
 });
@@ -292,17 +352,8 @@ app.post('/api/alchemy/analyze', async (req, res) => {
 
     // Si no hay API key, usar datos simulados pero con lógica de wallets famosas
     if (!ALCHEMY_API_KEY) {
-      // Wallets famosas conocidas - riesgo bajo
-      const famousWallets = [
-        '0xab5801a7d398351b8be11c439e05c5b3259aec9b', // Vitalik Buterin
-        '0x000000000000000000000000000000000000dEaD',   // Burn address
-        '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE', // Binance
-        '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'  // Uniswap V2
-      ];
-      
-      const isFamousWallet = famousWallets.includes(address.toLowerCase());
-      const score = isFamousWallet ? 25 : 45; // Bajo para famosas, medio para otras
-      const risk = score >= 40 ? 'medium' : 'low';
+      const riskProfile = getWalletRiskProfile(address);
+      const { score, risk, isFamousWallet, isMediumRiskWallet } = riskProfile;
       
       return res.json({
         providerKey: 'alchemy',
@@ -319,7 +370,9 @@ app.post('/api/alchemy/analyze', async (req, res) => {
         score,
         ofacHit: false,
         risk,
-        notes: isFamousWallet ? 'Wallet famosa reconocida - datos simulados (configura ALCHEMY_API_KEY para datos reales).' : 'Datos simulados (configura ALCHEMY_API_KEY para datos reales).'
+        notes: isFamousWallet ? 'Wallet famosa reconocida - datos simulados (configura ALCHEMY_API_KEY para datos reales).' : 
+               isMediumRiskWallet ? 'Wallet de medio riesgo identificada - datos simulados (configura ALCHEMY_API_KEY para datos reales).' :
+               'Datos simulados (configura ALCHEMY_API_KEY para datos reales).'
       });
     }
 
@@ -389,14 +442,13 @@ app.post('/api/alchemy/analyze', async (req, res) => {
     // 2. Tienen muchas transacciones salientes (construyen bloques)
     // 3. Balance alto (reciben recompensas de bloque)
     const blockTransfers = Array.isArray(blockData?.transfers) ? blockData.transfers : [];
-    const isBuilder = isContract && 
-                     blockTransfers.length > 0 && 
-                     (parseInt(balanceWei, 16) > 1000000000000000000n); // > 1 ETH
+    const isBlockBuilder = isContract && 
+                          blockTransfers.length > 0 && 
+                          (parseInt(balanceWei, 16) > 1000000000000000000n); // > 1 ETH
 
     // Lista de Builders conocidos (MEV Builders principales)
     const knownBuilders = [
       '0x0000000000000000000000000000000000000000', // Genesis
-      '0x690b9a9e9aa1c9db991c7721a92d351db4fac990', // Flashbots Builder
       '0x81beef03aafd3dd33ffd7deb337407142c80fea3', // Builder0x69
       '0x95222290dd7278aa3ddd389cc1e1d165cc4bafe5', // Builder0x69
       '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97', // Builder0x69
@@ -471,24 +523,31 @@ app.post('/api/alchemy/analyze', async (req, res) => {
       score = Math.max(score, 10);
     }
     
-    // Wallets famosas conocidas - riesgo bajo
-    const famousWallets = [
-      '0xab5801a7d398351b8be11c439e05c5b3259aec9b', // Vitalik Buterin
-      '0x000000000000000000000000000000000000dEaD',   // Burn address
-      '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE', // Binance
-      '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'  // Uniswap V2
-    ];
+    const riskProfile = getWalletRiskProfile(address);
+    const { isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    const isFamousWallet = famousWallets.includes(address.toLowerCase());
+    console.log(`🔍 DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBlockBuilder: ${isBlockBuilder}, isKnownBuilder: ${isKnownBuilder}, isKnownBuilderFromProfile: ${isKnownBuilderFromProfile}, score before corrections: ${score}`);
     
-    // Builders son siempre seguros - riesgo muy bajo
-    if (isBuilder || isKnownBuilder) {
+    // APLICAR CORRECCIONES DESPUÉS del score base mínimo
+    // PRIORIDAD: Medio riesgo > Builders > Famosas
+    if (isMediumRiskWallet) {
+      score = 55; // Forzar riesgo medio para estas wallets específicas
+      console.log(`🔍 DEBUG: Medium risk wallet detected, score set to 55`);
+    } else if (isBlockBuilder || isKnownBuilder || isKnownBuilderFromProfile) {
       score = 5; // Riesgo mínimo para Builders
+      console.log(`🔍 DEBUG: Builder detected, score set to 5`);
     } else if (isFamousWallet) {
       score = Math.min(score, 30); // Máximo riesgo bajo para wallets famosas
+      console.log(`🔍 DEBUG: Famous wallet detected, score set to ${score}`);
+    } else {
+      console.log(`🔍 DEBUG: No special wallet detected, keeping score: ${score}`);
     }
     
+    console.log(`🔍 DEBUG: Final score: ${score}`);
+    
     const risk = ofacHit ? 'high' : score >= 40 ? 'medium' : 'low';
+    
+    console.log(`🔍 DEBUG: Final risk: ${risk}, score: ${score}, ofacHit: ${ofacHit}`);
 
     return res.json({
       providerKey: 'alchemy',
@@ -502,8 +561,9 @@ app.post('/api/alchemy/analyze', async (req, res) => {
       ofacHit,
       risk,
       notes: isSanctioned ? 'DIRECCIÓN SANCIONADA DETECTADA - NO INTERACTUAR.' :
-             isBuilder || isKnownBuilder ? 'Builder detectado - constructor de bloques (muy seguro).' : 
+             isBlockBuilder || isKnownBuilder || isKnownBuilderFromProfile ? 'Builder detectado - constructor de bloques (muy seguro).' : 
              isFamousWallet ? 'Wallet famosa reconocida - datos reales de Alchemy.' : 
+             isMediumRiskWallet ? 'Wallet de medio riesgo identificada - datos reales de Alchemy.' :
              riskFactors.length > 0 ? `Factores de riesgo: ${riskFactors.join(', ')}` :
              'Datos reales de Alchemy (balance y últimas transferencias).'
     });
@@ -536,34 +596,15 @@ app.post('/api/elliptic/analyze', async (req, res) => {
     const isSanctioned = sanctionedAddresses.includes(address.toLowerCase());
     const sanctionsHit = isSanctioned;
     
-    // Wallets famosas conocidas - riesgo bajo
-    const famousWallets = [
-      '0xab5801a7d398351b8be11c439e05c5b3259aec9b', // Vitalik Buterin
-      '0x000000000000000000000000000000000000dEaD',   // Burn address
-      '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE', // Binance
-      '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'  // Uniswap V2
-    ];
+    const riskProfile = getWalletRiskProfile(address);
+    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder } = riskProfile;
     
-    const isFamousWallet = famousWallets.includes(address.toLowerCase());
+    console.log(`🔍 ELLIPTIC DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isBuilder}`);
+    console.log(`🔍 ELLIPTIC DEBUG: riskProfile:`, riskProfile);
+    console.log(`🔍 ELLIPTIC DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
     
-    // Usar la misma lógica de clasificación que Alchemy para consistencia
-    // Simular un score basado en el hash pero alineado con Alchemy
-    let hash = 0; for (let i = 0; i < address.length; i++) hash = (hash * 31 + address.charCodeAt(i)) | 0;
-    const base = Math.abs(hash) % 100;
-    
-    // Mapear el hash a un score que sea consistente con Alchemy
-    let riskScore;
-    if (isSanctioned) {
-      riskScore = 100; // Máximo riesgo para sancionados
-    } else if (isFamousWallet) {
-      riskScore = Math.min(base, 30); // Máximo riesgo bajo para famosas
-    } else {
-      // Mapear hash a score similar a Alchemy (10-60)
-      riskScore = Math.min(10 + (base * 0.5), 60);
-    }
-    
-    // Usar la misma lógica de clasificación que Alchemy
-    const risk = sanctionsHit ? 'high' : (riskScore >= 40 ? 'medium' : 'low');
+    // Ajustar riesgo si está sancionado
+    const finalRisk = sanctionsHit ? 'high' : risk;
     const categories = sanctionsHit ? ['Sanctions'] : (risk === 'medium' ? ['Mixing', 'DEX'] : ['Exchange']);
     const reasons = sanctionsHit ? ['Possible watchlist match'] : ['Behavioral heuristics'];
 
@@ -572,11 +613,12 @@ app.post('/api/elliptic/analyze', async (req, res) => {
       providerName: 'Elliptic',
       sanctionsHit,
       riskScore,
-      risk,
+      risk: finalRisk,
       categories,
       reasons,
       notes: isSanctioned ? 'DIRECCIÓN SANCIONADA DETECTADA - NO INTERACTUAR.' :
              isFamousWallet ? 'Wallet famosa reconocida - simulación Elliptic.' : 
+             isMediumRiskWallet ? 'Wallet de medio riesgo identificada - simulación Elliptic.' :
              ELLIPTIC_API_KEY ? 'Datos de Elliptic (o mapeo) disponibles.' : 
              'Simulación (añade ELLIPTIC_API_KEY para datos reales).'
     });
@@ -707,37 +749,18 @@ app.post('/api/chainalysis/analyze', async (req, res) => {
       '0x68749665ff8d2d112fa859aa293f07a622782f38'
     ];
     
-    // Wallets famosas conocidas - riesgo bajo
-    const famousWallets = [
-      '0xab5801a7d398351b8be11c439e05c5b3259aec9b', // Vitalik Buterin
-      '0x000000000000000000000000000000000000dEaD',   // Burn address
-      '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE', // Binance
-      '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'  // Uniswap V2
-    ];
-    
     const addrLc = address.toLowerCase();
     const isSanctioned = sanctionedAddresses.includes(addrLc);
-    const isFamousWallet = famousWallets.includes(addrLc);
-    
-    // Usar la misma lógica de clasificación que Alchemy para consistencia
-    // Simular un score basado en el hash pero alineado con Alchemy
-    let hash = 0; for (let i = 0; i < address.length; i++) hash = (hash * 31 + address.charCodeAt(i)) | 0;
-    const base = Math.abs(hash) % 100;
     const sanctionsHit = isSanctioned;
     
-    // Mapear el hash a un score que sea consistente con Alchemy
-    let riskScore;
-    if (isSanctioned) {
-      riskScore = 100; // Máximo riesgo para sancionados
-    } else if (isFamousWallet) {
-      riskScore = Math.min(base, 30); // Máximo riesgo bajo para famosas
-    } else {
-      // Mapear hash a score similar a Alchemy (10-60)
-      riskScore = Math.min(10 + (base * 0.5), 60);
-    }
+    const riskProfile = getWalletRiskProfile(address);
+    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder } = riskProfile;
     
-    // Usar la misma lógica de clasificación que Alchemy
-    const risk = sanctionsHit ? 'high' : (riskScore >= 40 ? 'medium' : 'low');
+    console.log(`🔍 CHAINALYSIS DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isBuilder}`);
+    console.log(`🔍 CHAINALYSIS DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
+    
+    // Ajustar riesgo si está sancionado
+    const finalRisk = sanctionsHit ? 'high' : risk;
     const categories = sanctionsHit ? ['Sanctions', 'Tornado Cash'] : (risk === 'medium' ? ['Mixing', 'Gambling'] : ['Exchange']);
     const exposure = sanctionsHit ? [{ type: 'Sanctions', percent: 100 }, { type: 'Tornado Cash', percent: 100 }] : [{ type: 'DEX', percent: 12 }, { type: 'CEX', percent: 34 }];
     return res.json({
@@ -745,15 +768,157 @@ app.post('/api/chainalysis/analyze', async (req, res) => {
       providerName: 'Chainalysis',
       sanctionsHit,
       riskScore,
-      risk,
+      risk: finalRisk,
       categories,
       exposure,
       notes: isSanctioned ? 'Dirección sancionada detectada (Tornado Cash).' : 
              isFamousWallet ? 'Wallet famosa reconocida - simulación Chainalysis.' :
+             isMediumRiskWallet ? 'Wallet de medio riesgo identificada - simulación Chainalysis.' :
              'Simulación (configura CHAINALYSIS_API_URL y CHAINALYSIS_API_KEY para datos reales).'
     });
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Server error' });
+  }
+});
+
+// Endpoint para Etherscan API
+app.post('/api/etherscan/analyze', async (req, res) => {
+  try {
+    const { address } = req.body || {};
+    if (!address || typeof address !== 'string' || address.length < 6) {
+      return res.status(400).json({ error: 'Invalid address' });
+    }
+
+    console.log(`🔍 Etherscan: Analizando ${address}`);
+
+    // Verificar si la dirección está en listas de sanciones
+    const sanctionedAddresses = [
+      '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c',
+      '0x7f367cc41522ce07553e823bf3be79a889debe1b',
+      '0x68749665ff8d2d112fa859aa293f07a622782f38'
+    ];
+    
+    const isSanctioned = sanctionedAddresses.includes(address.toLowerCase());
+    const sanctionsHit = isSanctioned;
+    
+    const riskProfile = getWalletRiskProfile(address);
+    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder } = riskProfile;
+    
+    console.log(`🔍 ETHERSCAN DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isBuilder}`);
+    console.log(`🔍 ETHERSCAN DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
+    
+    // Ajustar riesgo si está sancionado
+    const finalRisk = sanctionsHit ? 'high' : risk;
+
+    // Si no hay API key, usar datos simulados
+    if (!ETHERSCAN_API_KEY || ETHERSCAN_API_KEY === 'YourApiKeyToken') {
+      console.log('🔍 Etherscan: Usando datos simulados (no hay API key)');
+      
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit,
+        riskScore,
+        risk: finalRisk,
+        ethBalance: isFamousWallet ? '10.5' : '2.3',
+        transactionCount: isFamousWallet ? 1250 : 45,
+        isContract: false,
+        lastTransaction: isFamousWallet ? '2024-01-15T10:30:00Z' : '2024-01-14T15:45:00Z',
+        gasUsed: isFamousWallet ? '21000' : '15000',
+        categories: sanctionsHit ? ['Sanctions'] : (risk === 'medium' ? ['DEX', 'Trading'] : ['Exchange']),
+        notes: isSanctioned ? 'Dirección sancionada detectada.' : 
+               isFamousWallet ? 'Wallet famosa reconocida - datos simulados de Etherscan.' :
+               isMediumRiskWallet ? 'Wallet de medio riesgo identificada - datos simulados de Etherscan.' :
+               'Datos simulados de Etherscan (configura ETHERSCAN_API_KEY para datos reales).'
+      });
+    }
+
+    // Llamadas reales a Etherscan API
+    console.log('🔍 Etherscan: Haciendo llamadas reales a la API');
+    
+    try {
+      // 1. Obtener balance de ETH (API V2 con chainid)
+      const balanceResponse = await fetch(
+        `https://api.etherscan.io/v2/api?module=account&action=balance&address=${address}&tag=latest&chainid=1&apikey=${ETHERSCAN_API_KEY}`
+      );
+      const balanceData = await balanceResponse.json();
+      const ethBalanceWei = balanceData.result || '0';
+      const ethBalance = (parseInt(ethBalanceWei) / 1e18).toFixed(4);
+
+      // 2. Obtener número de transacciones (API V2 con chainid)
+      const txCountResponse = await fetch(
+        `https://api.etherscan.io/v2/api?module=proxy&action=eth_getTransactionCount&address=${address}&tag=latest&chainid=1&apikey=${ETHERSCAN_API_KEY}`
+      );
+      const txCountData = await txCountResponse.json();
+      const transactionCount = parseInt(txCountData.result || '0', 16);
+
+      // 3. Obtener últimas transacciones (API V2 con chainid)
+      const txListResponse = await fetch(
+        `https://api.etherscan.io/v2/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=5&sort=desc&chainid=1&apikey=${ETHERSCAN_API_KEY}`
+      );
+      const txListData = await txListResponse.json();
+      const transactions = txListData.result || [];
+      
+      // 4. Verificar si es contrato (API V2 con chainid)
+      const codeResponse = await fetch(
+        `https://api.etherscan.io/v2/api?module=proxy&action=eth_getCode&address=${address}&tag=latest&chainid=1&apikey=${ETHERSCAN_API_KEY}`
+      );
+      const codeData = await codeResponse.json();
+      const isContract = codeData.result && codeData.result !== '0x';
+
+      // Calcular gas usado promedio
+      const gasUsed = Array.isArray(transactions) && transactions.length > 0 
+        ? Math.round(transactions.reduce((sum, tx) => sum + parseInt(tx.gasUsed || '0'), 0) / transactions.length)
+        : '0';
+
+      // Última transacción
+      const lastTransaction = Array.isArray(transactions) && transactions.length > 0 
+        ? new Date(parseInt(transactions[0].timeStamp) * 1000).toISOString()
+        : null;
+
+      console.log(`✅ Etherscan: Datos reales obtenidos - Balance: ${ethBalance} ETH, TXs: ${transactionCount}, Contract: ${isContract}`);
+
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit,
+        riskScore,
+        risk: finalRisk,
+        ethBalance,
+        transactionCount,
+        isContract,
+        lastTransaction,
+        gasUsed: gasUsed.toString(),
+        categories: sanctionsHit ? ['Sanctions'] : (risk === 'medium' ? ['DEX', 'Trading'] : ['Exchange']),
+        notes: isSanctioned ? 'Dirección sancionada detectada.' : 
+               isFamousWallet ? 'Wallet famosa reconocida - datos reales de Etherscan.' :
+               isMediumRiskWallet ? 'Wallet de medio riesgo identificada - datos reales de Etherscan.' :
+               'Datos reales de Etherscan (balance, transacciones y código de contrato).'
+      });
+
+    } catch (apiError) {
+      console.error('❌ Error llamando a Etherscan API:', apiError);
+      
+      // Fallback a datos simulados si la API falla
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit,
+        riskScore,
+        risk: finalRisk,
+        ethBalance: isFamousWallet ? '10.5' : '2.3',
+        transactionCount: isFamousWallet ? 1250 : 45,
+        isContract: false,
+        lastTransaction: isFamousWallet ? '2024-01-15T10:30:00Z' : '2024-01-14T15:45:00Z',
+        gasUsed: isFamousWallet ? '21000' : '15000',
+        categories: sanctionsHit ? ['Sanctions'] : (risk === 'medium' ? ['DEX', 'Trading'] : ['Exchange']),
+        notes: 'Error en API de Etherscan, usando datos simulados.'
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error en endpoint Etherscan:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

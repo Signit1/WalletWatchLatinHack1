@@ -3,11 +3,17 @@ import { analyzeWithAlchemy } from './lib/alchemy';
 import { analyzeWithElliptic } from './lib/elliptic';
 import { screenWithOfac } from './lib/ofac';
 import { analyzeWithChainalysis } from './lib/chainalysis';
+import { analyzeWithEtherscan } from './lib/etherscan';
+import MetaMaskIntegration from './components/MetaMaskIntegration';
+import NFTImagePreview from './components/NFTImagePreview';
+import WalletExamples from './components/WalletExamples';
+import NFTGallery from './components/NFTGallery';
 import EllipticDetailsWrapper from './components/EllipticDetailsWrapper';
 import OfacDetailsWrapper from './components/OfacDetailsWrapper';
 import AlchemyDetailsWrapper from './components/AlchemyDetailsWrapper';
+import EtherscanDetailsWrapper from './components/EtherscanDetailsWrapper';
 
-type ProviderKey = 'alchemy' | 'elliptic' | 'ofac' | 'chainalysis';
+type ProviderKey = 'alchemy' | 'elliptic' | 'ofac' | 'chainalysis' | 'etherscan';
 
 interface ProviderDef { key: ProviderKey; name: string }
 interface ProviderResult {
@@ -23,7 +29,8 @@ const PROVIDERS: ProviderDef[] = [
   { key: 'alchemy', name: 'Alchemy' },
   { key: 'elliptic', name: 'Elliptic' },
   { key: 'ofac', name: 'OFAC' },
-  { key: 'chainalysis', name: 'Chainalysis' }
+  { key: 'chainalysis', name: 'Chainalysis' },
+  { key: 'etherscan', name: 'Etherscan' }
 ];
 
 function pseudoRandomIntFromString(input: string, maxExclusive: number): number {
@@ -182,6 +189,14 @@ export default function App(): React.JSX.Element {
   const [results, setResults] = useState<ProviderResult[] | null>(null);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [criticalError, setCriticalError] = useState<string | null>(null);
+  const [nftMinted, setNftMinted] = useState<{ 
+    tokenId: number; 
+    transactionHash: string; 
+    imageUrl?: string; 
+    metadata?: any;
+  } | null>(null);
+  const [polkadotAddress, setPolkadotAddress] = useState('');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'gallery' | 'examples'>('analysis');
 
   const overall = useMemo(() => results ? aggregateOverall(results) : null, [results]);
 
@@ -193,6 +208,26 @@ export default function App(): React.JSX.Element {
       console.error('Error agregando log:', error);
     }
   }
+
+  const handleMintSuccess = (tokenId: number, transactionHash: string, imageUrl?: string, metadata?: any) => {
+    setNftMinted({ tokenId, transactionHash, imageUrl, metadata });
+    addDebugLog(`✅ NFT minted successfully! Token ID: ${tokenId}, TX: ${transactionHash}`);
+    if (imageUrl) {
+      addDebugLog(`🖼️ NFT image generated: ${imageUrl.slice(0, 50)}...`);
+    }
+  };
+
+  const handleMintError = (error: string) => {
+    addDebugLog(`❌ NFT minting error: ${error}`);
+  };
+
+  const handleSelectWallet = (walletAddress: string, polkadotAddr: string) => {
+    setAddress(walletAddress);
+    setPolkadotAddress(polkadotAddr);
+    setActiveTab('analysis'); // Cambiar automáticamente a la pestaña de análisis
+    addDebugLog(`🎯 Wallet seleccionada: ${walletAddress.slice(0, 8)}...`);
+    addDebugLog(`🔗 Polkadot: ${polkadotAddr.slice(0, 8)}...`);
+  };
 
   // Log cuando se actualizan los resultados
   React.useEffect(() => {
@@ -312,6 +347,25 @@ export default function App(): React.JSX.Element {
           return { providerKey: p.key, providerName: p.name, score, ofacHit, risk, notes: 'Fallback simulado (error API Chainalysis).' } as ProviderResult;
         }
       }
+      if (p.key === 'etherscan') {
+        try {
+          addDebugLog(`🔍 Procesando Etherscan...`);
+          const real = await analyzeWithEtherscan(address);
+          addDebugLog(`✅ Etherscan exitoso: ${real.risk} (${real.riskScore})`);
+          return {
+            providerKey: real.providerKey,
+            providerName: real.providerName,
+            score: real.riskScore,
+            ofacHit: real.sanctionsHit,
+            risk: real.risk,
+            notes: real.notes
+          } as ProviderResult;
+        } catch (error) {
+          addDebugLog(`❌ Error en Etherscan: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+          console.error('Error en Etherscan:', error);
+          return { providerKey: 'etherscan', providerName: 'Etherscan', score: 0, ofacHit: false, risk: 'low', notes: 'Fallback simulado (error API Etherscan).' } as ProviderResult;
+        }
+      }
       // Otros proveedores: simulado
       const base = pseudoRandomIntFromString(`${address}:${p.key}`, 100);
       const ofacHit = base % 23 === 0;
@@ -382,13 +436,57 @@ export default function App(): React.JSX.Element {
       </div>
       
       <header className="px-4 pt-8 pb-2 text-center relative z-10">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-          Analizador de Riesgo AML/PLD
-        </h1>
-        <p className="text-muted mt-2 text-lg">Ingrese una wallet para evaluar su nivel de riesgo</p>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-2">
+            Analizador de Riesgo AML/PLD
+          </h1>
+          <p className="text-muted text-lg">Ingrese una wallet para evaluar su nivel de riesgo</p>
+        </div>
+        
+        {/* Sistema de pestañas */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-gray-800 rounded-lg p-1 flex gap-1">
+            <button
+              onClick={() => setActiveTab('analysis')}
+              className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                activeTab === 'analysis'
+                  ? 'bg-blue-500 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              🔍 Análisis
+            </button>
+            <button
+              onClick={() => setActiveTab('examples')}
+              className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                activeTab === 'examples'
+                  ? 'bg-green-500 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              🎯 Ejemplos
+            </button>
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                activeTab === 'gallery'
+                  ? 'bg-purple-500 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              🖼️ Galería
+            </button>
+          </div>
+        </div>
       </header>
 
       <main className="max-w-5xl mx-auto p-4 relative z-10">
+        {activeTab === 'gallery' ? (
+          <NFTGallery />
+        ) : activeTab === 'examples' ? (
+          <WalletExamples onSelectWallet={handleSelectWallet} />
+        ) : (
+          <>
         <section className="card-enhanced rounded-xl p-6 hover-glow">
           <form onSubmit={onAnalyze} className="space-y-3" autoComplete="off">
             <label htmlFor="wallet" className="block text-muted">Wallet address</label>
@@ -425,6 +523,7 @@ export default function App(): React.JSX.Element {
           </form>
         </section>
 
+
         <section className={`card-enhanced rounded-xl p-6 mt-6 hover-glow ${!results && !loading ? 'hidden' : ''}`} aria-live="polite">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-semibold">Resultados de análisis</h2>
@@ -433,14 +532,75 @@ export default function App(): React.JSX.Element {
             </div>
           </div>
 
+          {/* Sección de NFT de Verificación */}
+          {results && results.length > 0 && (
+            <div className="mt-6">
+              <MetaMaskIntegration
+                walletAddress={address}
+                riskLevel={overall?.risk || 'unknown'}
+                riskProfile={overall ? getRiskProfile(overall.score, overall.ofacHit, overall.notes).name : 'Unknown'}
+                polkadotAddress={polkadotAddress}
+                onMintSuccess={handleMintSuccess}
+                onMintError={handleMintError}
+              />
+              
+              {/* Mostrar NFT mintado */}
+              {nftMinted && (
+                <div className="mt-4 space-y-4">
+                  <div className="card-enhanced rounded-xl p-6 border-green-500">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="text-2xl">🎉</div>
+                      <h3 className="text-lg font-semibold">NFT Emitido Exitosamente</h3>
+                    </div>
+                    <div className="bg-gray-800 p-4 rounded-lg space-y-2">
+                      <p className="text-sm text-gray-300">
+                        <strong>Token ID:</strong> #{nftMinted.tokenId}
+                      </p>
+                      <p className="text-sm text-gray-300">
+                        <strong>Transaction Hash:</strong> 
+                        <span className="font-mono text-blue-400 ml-2">
+                          {nftMinted.transactionHash.slice(0, 10)}...{nftMinted.transactionHash.slice(-8)}
+                        </span>
+                      </p>
+                      <p className="text-sm text-gray-300">
+                        <strong>Wallet Verificada:</strong> {address}
+                      </p>
+                      {nftMinted.imageUrl && (
+                        <p className="text-sm text-green-400">
+                          <strong>Imagen:</strong> Generada exitosamente
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mostrar imagen del NFT */}
+                  {nftMinted.imageUrl && nftMinted.metadata && (
+                    <NFTImagePreview
+                      data={{
+                        walletAddress: address,
+                        riskLevel: overall?.risk || 'unknown',
+                        riskProfile: overall ? getRiskProfile(overall.score, overall.ofacHit, overall.notes).name : 'Unknown',
+                        riskScore: overall?.score || 0,
+                        verificationDate: new Date().toISOString().split('T')[0],
+                        polkadotAddress: polkadotAddress,
+                        tokenId: nftMinted.tokenId
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
             {loading && (
               <div className="text-muted">Procesando...</div>
             )}
             {!loading && results?.map(r => {
               try {
-                const score = r.score || r.riskScore || 0;
-                const ofacHit = r.ofacHit || r.sanctionsHit || false;
+                // Usar el riesgo general (overall) para los nombres funny, no el score individual
+                const score = overall?.score || r.score || r.riskScore || 0;
+                const ofacHit = overall?.ofacHit || r.ofacHit || r.sanctionsHit || false;
                 const riskProfile = getRiskProfile(score, ofacHit, r.notes);
                 
                 // Validar que riskProfile no sea undefined
@@ -492,6 +652,9 @@ export default function App(): React.JSX.Element {
                 {r.providerKey === 'ofac' && (
                   <OfacDetailsWrapper address={address} />
                 )}
+                {r.providerKey === 'etherscan' && (
+                  <EtherscanDetailsWrapper address={address} />
+                )}
                 </div>
                 );
               } catch (error) {
@@ -514,6 +677,8 @@ export default function App(): React.JSX.Element {
             <div className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block mr-2"></span> 🏗️ Builder (Block Builder - Máxima Seguridad)</div>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       {/* Sección de Debug Logs */}
