@@ -8,7 +8,7 @@ export default function EtherscanDetails({ data }: { data: EtherscanAnalysisResp
         <div className="font-semibold mb-2">📊 Datos Reales de Etherscan</div>
         
         {/* Balance de ETH - Datos más importantes */}
-        {data.balance !== undefined && (
+        {data.balance !== undefined && data.balance !== null && typeof data.balance === 'number' && (
           <div className="mb-2 p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
             <div className="flex items-center gap-2">
               <span className="text-blue-400">💰</span>
@@ -19,7 +19,7 @@ export default function EtherscanDetails({ data }: { data: EtherscanAnalysisResp
         )}
         
         {/* Total de transacciones */}
-        {data.totalTransactions !== undefined && (
+        {data.totalTransactions !== undefined && data.totalTransactions !== null && (
           <div className="mb-2 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
             <div className="flex items-center gap-2">
               <span className="text-green-400">📈</span>
@@ -30,7 +30,9 @@ export default function EtherscanDetails({ data }: { data: EtherscanAnalysisResp
         )}
         
         {/* Desglose de transacciones - Solo si hay datos */}
-        {data.normalTransactions !== undefined && data.internalTransactions !== undefined && data.tokenTransactions !== undefined && (
+        {data.normalTransactions !== undefined && data.normalTransactions !== null &&
+         data.internalTransactions !== undefined && data.internalTransactions !== null &&
+         data.tokenTransactions !== undefined && data.tokenTransactions !== null && (
           <div className="mb-2 p-2 bg-purple-500/10 rounded-lg border border-purple-500/20">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-purple-400">🔍</span>
