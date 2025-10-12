@@ -225,9 +225,11 @@ export default function App(): React.JSX.Element {
   const handleSelectWallet = (walletAddress: string, polkadotAddr: string) => {
     setAddress(walletAddress);
     setPolkadotAddress(polkadotAddr);
+    setResults([]); // Limpiar resultados anteriores
     setActiveTab('analysis'); // Cambiar automáticamente a la pestaña de análisis
     addDebugLog(`🎯 Wallet seleccionada: ${walletAddress.slice(0, 8)}...`);
     addDebugLog(`🔗 Polkadot: ${polkadotAddr.slice(0, 8)}...`);
+    addDebugLog(`🧹 Resultados anteriores limpiados - Listo para nuevo análisis`);
   };
 
   // Log cuando se actualizan los resultados
