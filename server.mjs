@@ -597,9 +597,9 @@ app.post('/api/elliptic/analyze', async (req, res) => {
     const sanctionsHit = isSanctioned;
     
     const riskProfile = getWalletRiskProfile(address);
-    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder } = riskProfile;
+    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    console.log(`🔍 ELLIPTIC DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isBuilder}`);
+    console.log(`🔍 ELLIPTIC DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
     console.log(`🔍 ELLIPTIC DEBUG: riskProfile:`, riskProfile);
     console.log(`🔍 ELLIPTIC DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
     
@@ -754,9 +754,9 @@ app.post('/api/chainalysis/analyze', async (req, res) => {
     const sanctionsHit = isSanctioned;
     
     const riskProfile = getWalletRiskProfile(address);
-    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder } = riskProfile;
+    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    console.log(`🔍 CHAINALYSIS DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isBuilder}`);
+    console.log(`🔍 CHAINALYSIS DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
     console.log(`🔍 CHAINALYSIS DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
     
     // Ajustar riesgo si está sancionado
@@ -802,9 +802,9 @@ app.post('/api/etherscan/analyze', async (req, res) => {
     const sanctionsHit = isSanctioned;
     
     const riskProfile = getWalletRiskProfile(address);
-    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder } = riskProfile;
+    const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    console.log(`🔍 ETHERSCAN DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isBuilder}`);
+    console.log(`🔍 ETHERSCAN DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
     console.log(`🔍 ETHERSCAN DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
     
     // Ajustar riesgo si está sancionado

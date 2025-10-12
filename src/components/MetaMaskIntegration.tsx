@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMetaMask } from '../hooks/useMetaMask';
 import { nftService } from '../lib/nftService';
+import { polkadotService } from '../lib/polkadotService';
 
 interface MetaMaskIntegrationProps {
   walletAddress: string;
@@ -35,6 +36,8 @@ export default function MetaMaskIntegration({
   const [isMinting, setIsMinting] = useState(false);
   const [isWalletVerified, setIsWalletVerified] = useState(false);
   const [existingTokenId, setExistingTokenId] = useState<number | null>(null);
+  const [isVerifyingOnChain, setIsVerifyingOnChain] = useState(false);
+  const [onChainTxHash, setOnChainTxHash] = useState<string>('');
 
   // Verificar si la wallet ya está verificada
   useEffect(() => {
@@ -97,6 +100,46 @@ export default function MetaMaskIntegration({
       onMintError?.(error.message || 'Error minting NFT');
     } finally {
       setIsMinting(false);
+    }
+  };
+
+  const handleVerifyOnChain = async () => {
+    if (!walletAddress) {
+      onMintError?.('Dirección de wallet requerida');
+      return;
+    }
+
+    setIsVerifyingOnChain(true);
+    setMintError(null);
+
+    try {
+      // Initialize Polkadot service if not already done
+      if (!polkadotService.isInitialized()) {
+        await polkadotService.initialize();
+      }
+
+      // Convert risk level to Polkadot format
+      const polkadotRiskLevel = riskLevel === 'high' ? 'High' : 
+                               riskLevel === 'medium' ? 'Medium' : 'Low';
+
+      // Verify wallet on Polkadot blockchain
+      const txHash = await polkadotService.verifyWalletOnChain(
+        walletAddress,
+        getRiskScoreFromLevel(riskLevel),
+        polkadotRiskLevel as 'Low' | 'Medium' | 'High',
+        false // isSanctioned - would come from OFAC analysis
+      );
+
+      setOnChainTxHash(txHash);
+      console.log('✅ Wallet verified on Polkadot blockchain:', txHash);
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setMintError(errorMessage);
+      onMintError?.(errorMessage);
+      console.error('❌ Error verifying on Polkadot:', error);
+    } finally {
+      setIsVerifyingOnChain(false);
     }
   };
 
@@ -200,6 +243,25 @@ export default function MetaMaskIntegration({
           >
             {isMinting ? '🔄 Emitiendo NFT...' : '🎨 Emitir NFT de Verificación (Demo)'}
           </button>
+
+          {/* Botón de verificación en Polkadot */}
+          <button
+            onClick={handleVerifyOnChain}
+            disabled={isVerifyingOnChain}
+            className="w-full bg-purple-500 hover:bg-purple-600 disabled:bg-gray-600 text-white px-4 py-3 rounded-lg transition-colors font-semibold"
+          >
+            {isVerifyingOnChain ? '🔄 Verificando en Polkadot...' : '🚀 Verificar en Polkadot Blockchain'}
+          </button>
+
+          {/* Mostrar hash de transacción de Polkadot */}
+          {onChainTxHash && (
+            <div className="bg-purple-900/20 border border-purple-500/50 p-4 rounded-lg">
+              <h4 className="text-purple-400 font-semibold mb-2">✅ Verificado en Polkadot</h4>
+              <p className="text-purple-300 text-sm font-mono break-all">
+                TX Hash: {onChainTxHash}
+              </p>
+            </div>
+          )}
 
           {/* Información adicional */}
           <div className="text-xs text-gray-400 space-y-1">

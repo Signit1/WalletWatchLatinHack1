@@ -12,6 +12,7 @@ import EllipticDetailsWrapper from './components/EllipticDetailsWrapper';
 import OfacDetailsWrapper from './components/OfacDetailsWrapper';
 import AlchemyDetailsWrapper from './components/AlchemyDetailsWrapper';
 import EtherscanDetailsWrapper from './components/EtherscanDetailsWrapper';
+import PolkadotTestPage from './components/PolkadotTestPage';
 
 type ProviderKey = 'alchemy' | 'elliptic' | 'ofac' | 'chainalysis' | 'etherscan';
 
@@ -196,7 +197,7 @@ export default function App(): React.JSX.Element {
     metadata?: any;
   } | null>(null);
   const [polkadotAddress, setPolkadotAddress] = useState('');
-  const [activeTab, setActiveTab] = useState<'analysis' | 'gallery' | 'examples'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'gallery' | 'examples' | 'test'>('analysis');
 
   const overall = useMemo(() => results ? aggregateOverall(results) : null, [results]);
 
@@ -476,12 +477,24 @@ export default function App(): React.JSX.Element {
             >
               🖼️ Galería
             </button>
+            <button
+              onClick={() => setActiveTab('test')}
+              className={`px-4 py-2 rounded-md transition-colors text-sm font-medium ${
+                activeTab === 'test'
+                  ? 'bg-orange-500 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
+              }`}
+            >
+              🚀 Test
+            </button>
           </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto p-4 relative z-10">
-        {activeTab === 'gallery' ? (
+        {activeTab === 'test' ? (
+          <PolkadotTestPage />
+        ) : activeTab === 'gallery' ? (
           <NFTGallery />
         ) : activeTab === 'examples' ? (
           <WalletExamples onSelectWallet={handleSelectWallet} />

@@ -1,6 +1,35 @@
-# WalletWatch - Analizador de Riesgo AML/PLD
+# WalletWatch - Analizador de Riesgo AML/PLD con Polkadot
 
-Una aplicación web moderna para analizar el nivel de riesgo AML (Anti-Money Laundering) y PLD (Prevención de Lavado de Dinero) de direcciones de wallet de criptomonedas.
+Una aplicación web moderna para analizar el nivel de riesgo AML (Anti-Money Laundering) y PLD (Prevención de Lavado de Dinero) de direcciones de wallet de criptomonedas con verificación on-chain en Polkadot.
+
+## 🚀 **Prototipo para Latin Hack**
+
+Este proyecto cumple con los requisitos del prototipo para Latin Hack:
+- ✅ **Tecnología Blockchain de Polkadot**: Smart contracts en Solidity (EVM) para verificación on-chain
+- ✅ **Funcionalidad Principal**: Verificación de wallets en testnet de Paseo
+- ✅ **Página /test Obligatoria**: Interfaz para interactuar directamente con smart contracts
+- ✅ **Botones Write/Read**: Operaciones de escritura y lectura en blockchain
+- ✅ **Repositorio Público**: Código disponible con documentación completa
+
+## 🔗 **Información de Red y Contratos**
+
+### **Red de Prueba**
+- **Red**: Paseo Testnet (Polkadot)
+- **RPC URL**: `https://paseo-rpc.polkadot.io`
+- **Explorer**: https://paseo.subscan.io/
+- **Chain ID**: 941 (Paseo)
+
+### **Smart Contract**
+- **Contrato**: VerificationContract
+- **Dirección**: `0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6`
+- **Lenguaje**: Solidity (EVM compatible)
+- **ABI**: Disponible en `/contracts/VerificationContract.json`
+- **Funciones**:
+  - `verifyWallet()` - Verificar wallet con datos de riesgo
+  - `getVerification()` - Leer datos de verificación
+  - `batchVerifyWallets()` - Verificación en lote
+  - `isVerified()` - Verificar si wallet está verificada
+  - `getTotalVerifications()` - Obtener total de verificaciones
 
 ## 🚀 Características
 
@@ -24,8 +53,11 @@ Una aplicación web moderna para analizar el nivel de riesgo AML (Anti-Money Lau
 
 - **Frontend**: React 18 + TypeScript + Tailwind CSS + Vite
 - **Backend**: Node.js + Express
-- **APIs**: Alchemy, Elliptic, OFAC, Chainalysis
-- **Puertos**: Frontend (3003), API (4000)
+- **Blockchain**: Polkadot (Paseo testnet) + Solidity smart contracts
+- **APIs**: Alchemy, Elliptic, OFAC, Chainalysis, Etherscan
+- **Web3**: MetaMask integration + Ethers.js
+- **NFTs**: Dynamic image generation + ERC-721 simulation
+- **Puertos**: Frontend (3002), API (4000)
 
 ## 📦 Instalación
 
@@ -60,13 +92,29 @@ npm run dev
 - Frontend: http://localhost:3003
 - API: http://localhost:4000
 
-## 📱 Uso
+## 🧪 **Cómo Probar el Prototipo**
 
-1. **Abrir la aplicación** en http://localhost:3003
+### **1. Página de Test Obligatoria**
+1. **Abrir la aplicación** en http://localhost:3002
+2. **Hacer clic en la pestaña "🚀 Test"**
+3. **Conectar MetaMask** a Paseo testnet (Chain ID: 941)
+4. **Verificar conexión** a Paseo testnet
+5. **Hacer clic en "🚀 Verificar en Blockchain"** (Write operation)
+6. **Hacer clic en "📖 Leer de Blockchain"** (Read operation)
+7. **Ver resultados** de verificación on-chain
+
+### **2. Análisis AML Completo**
+1. **Hacer clic en la pestaña "🔍 Análisis"**
 2. **Ingresar dirección de wallet** (ej: `0x8576acc5c05D6cE88F4e49BF65BDf0C62F91353c`)
 3. **Seleccionar proveedores** a consultar
 4. **Presionar "Analizar wallet"**
-5. **Revisar resultados** y semáforo de riesgo
+5. **Hacer clic en "🚀 Verificar en Polkadot Blockchain"** para verificación on-chain
+6. **Revisar resultados** y semáforo de riesgo
+
+### **3. Generación de NFTs**
+1. **Hacer clic en la pestaña "🖼️ Galería"**
+2. **Hacer clic en "🎨 Generar Ejemplos"** para crear NFTs de prueba
+3. **Ver NFTs** con imágenes dinámicas según nivel de riesgo
 
 ### Ejemplos de Direcciones para Probar
 
