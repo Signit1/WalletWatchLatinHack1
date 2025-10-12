@@ -509,12 +509,11 @@ app.post('/api/alchemy/analyze', async (req, res) => {
     
     // Builders son siempre seguros - riesgo muy bajo
     if (isBuilder || isKnownBuilder) {
-      score = 5; // Riesgo mínimo para Builders
-    } else if (isMediumRiskWallet) {
-      score = 50; // Score de medio riesgo para ejemplos
+      score = 5; // Riesgo mínimo para Builders - SIEMPRE RESPETAR
     } else if (isFamousWallet) {
       score = Math.min(score, 30); // Máximo riesgo bajo para wallets famosas
     }
+    // Removido override de mediumRiskWallets - usar datos reales
     
     const risk = ofacHit ? 'high' : score >= 40 ? 'medium' : 'low';
 
