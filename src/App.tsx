@@ -694,8 +694,8 @@ export default function App(): React.JSX.Element {
         )}
       </main>
 
-      {/* Sección de Debug Logs */}
-      {debugLogs.length > 0 && (
+      {/* Sección de Debug Logs - OCULTA PARA EL USUARIO */}
+      {false && debugLogs.length > 0 && (
         <section className="py-8 relative z-10">
           <div className="max-w-6xl mx-auto px-4">
             <div className="card-enhanced rounded-xl p-6">
