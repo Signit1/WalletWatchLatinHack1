@@ -199,12 +199,6 @@ export default function WalletExamples({ onSelectWallet }: WalletExamplesProps):
                 </span>
               </div>
               <div>
-                <span className="text-gray-400">Polkadot:</span>
-                <span className="font-mono text-purple-400 ml-2">
-                  {wallet.polkadotAddress.slice(0, 8)}...{wallet.polkadotAddress.slice(-6)}
-                </span>
-              </div>
-              <div>
                 <span className="text-gray-400">Perfil:</span>
                 <span className="text-yellow-400 ml-2">{wallet.riskProfile}</span>
               </div>
@@ -249,7 +243,7 @@ export default function WalletExamples({ onSelectWallet }: WalletExamplesProps):
             <strong>{selectedWallet.name}</strong> - {selectedWallet.description}
           </p>
           <p className="text-xs text-gray-400 mt-1">
-            {selectedWallet.address} | {selectedWallet.polkadotAddress}
+            {selectedWallet.address}
           </p>
         </div>
       )}
