@@ -276,6 +276,7 @@ export default function App() {
 
   function selectExampleWallet(walletAddress: string) {
     setAddress(walletAddress);
+    setResults(null); // Limpiar resultados anteriores
     setActiveTab('analyze');
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
