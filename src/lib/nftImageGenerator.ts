@@ -18,6 +18,48 @@ class NFTImageGenerator {
   private canvas: HTMLCanvasElement | null = null;
   private ctx: CanvasRenderingContext2D | null = null;
 
+  // Función para verificar si existe una imagen personalizada
+  private async checkCustomImage(riskProfile: string, riskLevel: string): Promise<string | null> {
+    try {
+      // Mapear perfiles de riesgo a nombres de archivo
+      const fileNameMap: { [key: string]: string } = {
+        'Crypto Chueco': 'crypto-chueco',
+        'Doña Tranza': 'dona-tranza',
+        'Gas Killer': 'gas-killer',
+        'Gas Guzzler': 'gas-guzzler',
+        'Wallet Zombie': 'wallet-zombie',
+        'Crypto Whale': 'crypto-whale',
+        'NFT Enthusiast': 'nft-enthusiast',
+        'CryptoSaint': 'crypto-saint',
+        'DeFi Explorer': 'defi-explorer',
+        'Token Collector': 'token-collector'
+      };
+
+      const fileName = fileNameMap[riskProfile];
+      if (!fileName) return null;
+
+      // Determinar la carpeta según el nivel de riesgo
+      const riskFolder = riskLevel.toLowerCase() === 'high' ? 'high-risk' :
+                        riskLevel.toLowerCase() === 'medium' ? 'medium-risk' : 'low-risk';
+
+      // Intentar cargar la imagen personalizada
+      const imagePath = `/nft-images/${riskFolder}/${fileName}.png`;
+      
+      // Verificar si la imagen existe haciendo una petición HEAD
+      const response = await fetch(imagePath, { method: 'HEAD' });
+      if (response.ok) {
+        console.log(`✅ Imagen personalizada encontrada: ${imagePath}`);
+        return imagePath;
+      } else {
+        console.log(`⚠️ Imagen personalizada no encontrada: ${imagePath}`);
+        return null;
+      }
+    } catch (error) {
+      console.log(`❌ Error verificando imagen personalizada:`, error);
+      return null;
+    }
+  }
+
   // Colores según el nivel de riesgo
   private getRiskColors(riskLevel: string) {
     switch (riskLevel.toLowerCase()) {
@@ -414,9 +456,43 @@ class NFTImageGenerator {
     this.ctx.fillText('WalletWatch Verification System', this.canvas.width / 2, this.canvas.height - 10);
   }
 
+  // Crear metadatos para el NFT
+  private createMetadata(data: NFTImageData, imageUrl: string) {
+    return {
+      name: `Wallet Verification Certificate #${data.tokenId}`,
+      description: `Certificate of wallet verification and risk assessment for ${data.walletAddress}`,
+      image: imageUrl,
+      attributes: [
+        { trait_type: 'Risk Level', value: data.riskLevel },
+        { trait_type: 'Risk Profile', value: data.riskProfile },
+        { trait_type: 'Risk Score', value: data.riskScore },
+        { trait_type: 'Wallet Address', value: data.walletAddress },
+        { trait_type: 'Verification Date', value: data.verificationDate },
+        { trait_type: 'Polkadot Address', value: data.polkadotAddress }
+      ],
+      external_url: 'https://walletwatch.app',
+      background_color: this.getRiskColors(data.riskLevel).background
+    };
+  }
+
   // Generar imagen completa
   async generateImage(data: NFTImageData): Promise<GeneratedImage> {
     try {
+      // Primero verificar si existe una imagen personalizada
+      const customImagePath = await this.checkCustomImage(data.riskProfile, data.riskLevel);
+      
+      if (customImagePath) {
+        // Usar imagen personalizada
+        console.log(`🎨 Usando imagen personalizada: ${customImagePath}`);
+        return {
+          imageUrl: customImagePath,
+          imageData: customImagePath, // Para imágenes personalizadas, usamos la URL
+          metadata: this.createMetadata(data, customImagePath)
+        };
+      }
+
+      // Si no hay imagen personalizada, generar una automáticamente
+      console.log(`🎨 Generando imagen automática para: ${data.riskProfile}`);
       this.createCanvas(512, 512);
       
       const colors = this.getRiskColors(data.riskLevel);
@@ -435,44 +511,8 @@ class NFTImageGenerator {
       const imageData = this.canvas.toDataURL('image/png');
       const imageUrl = imageData; // En producción, subir a IPFS o servidor
 
-      // Crear metadatos
-      const metadata = {
-        name: `Wallet Verification Certificate #${data.tokenId}`,
-        description: `Certificate of wallet verification and risk assessment for ${data.walletAddress}`,
-        image: imageUrl,
-        attributes: [
-          {
-            trait_type: "Wallet Address",
-            value: data.walletAddress
-          },
-          {
-            trait_type: "Risk Level",
-            value: data.riskLevel
-          },
-          {
-            trait_type: "Risk Profile",
-            value: data.riskProfile
-          },
-          {
-            trait_type: "Risk Score",
-            value: data.riskScore
-          },
-          {
-            trait_type: "Verification Date",
-            value: data.verificationDate
-          },
-          {
-            trait_type: "Polkadot Address",
-            value: data.polkadotAddress
-          },
-          {
-            trait_type: "Token ID",
-            value: data.tokenId
-          }
-        ],
-        external_url: "https://walletwatch.com",
-        background_color: colors.background
-      };
+      // Crear metadatos usando la función centralizada
+      const metadata = this.createMetadata(data, imageUrl);
 
       return {
         imageUrl,
