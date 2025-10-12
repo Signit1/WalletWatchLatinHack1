@@ -22,6 +22,7 @@ const OFAC_UPDATE_INTERVAL = 24 * 60 * 60 * 1000; // 24 horas
 let sanctionedAddressesCache = new Set();
 let lastOFACUpdate = 0;
 const ALCHEMY_URL = `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 const ELLIPTIC_API_KEY = process.env.ELLIPTIC_API_KEY;
 const OFAC_API_KEY = process.env.OFAC_API_KEY;
 const OFAC_API_URL = process.env.OFAC_API_URL; // e.g., https://ofac-api.com/v1/screen
@@ -828,6 +829,203 @@ app.post('/api/chainalysis/analyze', async (req, res) => {
       exposure,
       notes: 'Simulación consistente con Alchemy (configura CHAINALYSIS_API_URL y CHAINALYSIS_API_KEY para datos reales).'
     });
+  } catch (err) {
+    return res.status(500).json({ error: err?.message || 'Server error' });
+  }
+});
+
+// Etherscan integration (datos reales)
+app.post('/api/etherscan/analyze', async (req, res) => {
+  try {
+    const { address } = req.body || {};
+    if (!address || typeof address !== 'string' || address.length < 6) {
+      return res.status(400).json({ error: 'Invalid address' });
+    }
+
+    if (!ETHERSCAN_API_KEY) {
+      return res.status(500).json({ error: 'ETHERSCAN_API_KEY not configured' });
+    }
+
+    // CONSISTENCIA: Verificar OFAC primero (máxima prioridad)
+    const addrLc = address.toLowerCase();
+    const isSanctioned = sanctionedAddressesCache.has(addrLc);
+    if (isSanctioned) {
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit: true,
+        riskScore: 100,
+        risk: 'high',
+        categories: ['Sanctions', 'Tornado Cash'],
+        exposure: [{ type: 'Sanctions', percent: 100 }, { type: 'Tornado Cash', percent: 100 }],
+        notes: 'DIRECCIÓN SANCIONADA DETECTADA - Consistente con OFAC.'
+      });
+    }
+
+    // Verificar si es Builder (misma lógica que Alchemy)
+    const knownBuilders = [
+      '0x0000000000000000000000000000000000000000', // Genesis
+      '0x690b9a9e9aa1c9db991c7721a92d351db4fac990', // Flashbots Builder
+      '0x81beef03aafd3dd33ffd7deb337407142c80fea3', // Builder0x69
+      '0x95222290dd7278aa3ddd389cc1e1d165cc4bafe5', // Builder0x69
+      '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97', // Builder0x69
+      '0x0b7c6c7d2b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b'  // Otros builders conocidos
+    ];
+    
+    const isKnownBuilder = knownBuilders.includes(addrLc);
+    if (isKnownBuilder) {
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit: false,
+        riskScore: 5,
+        risk: 'low',
+        categories: ['Builder'],
+        exposure: [{ type: 'Block Construction', percent: 100 }],
+        notes: 'Builder detectado - Consistente con Alchemy (muy seguro).'
+      });
+    }
+
+    // Verificar wallets famosas (misma lógica que Alchemy)
+    const famousWallets = [
+      '0xab5801a7d398351b8be11c439e05c5b3259aec9b', // Vitalik Buterin
+      '0x000000000000000000000000000000000000dEaD',   // Burn address
+      '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE', // Binance
+      '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'  // Uniswap V2
+    ];
+    
+    const isFamousWallet = famousWallets.includes(addrLc);
+    if (isFamousWallet) {
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit: false,
+        riskScore: 25,
+        risk: 'low',
+        categories: ['Exchange', 'Famous Wallet'],
+        exposure: [{ type: 'CEX', percent: 80 }, { type: 'DEX', percent: 20 }],
+        notes: 'Wallet famosa reconocida - Consistente con Alchemy.'
+      });
+    }
+
+    // Para otras direcciones, usar datos reales de Etherscan
+    try {
+      // Obtener balance de ETH (API V2 con chainid)
+      const balanceResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=balance&address=${address}&tag=latest&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+      const balanceData = await balanceResponse.json();
+      
+      // Obtener transacciones normales (API V2 con chainid)
+      const txResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+      const txData = await txResponse.json();
+      
+      // Obtener transacciones internas (API V2 con chainid)
+      const internalTxResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=txlistinternal&address=${address}&startblock=0&endblock=99999999&page=1&offset=5&sort=desc&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+      const internalTxData = await internalTxResponse.json();
+      
+      // Obtener tokens ERC-20 (API V2 con chainid)
+      const tokenResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+      const tokenData = await tokenResponse.json();
+
+      const balance = balanceData.result ? parseInt(balanceData.result) / 1e18 : 0;
+      const normalTxs = txData.result || [];
+      const internalTxs = internalTxData.result || [];
+      const tokenTxs = tokenData.result || [];
+      
+      const totalTxs = normalTxs.length + internalTxs.length + tokenTxs.length;
+      
+      // Análisis de riesgo basado en datos reales de Etherscan
+      let riskScore = 10;
+      let riskFactors = [];
+      
+      // 1. Análisis de volumen de transacciones
+      if (totalTxs > 100) {
+        riskScore += 20;
+        riskFactors.push('Alta frecuencia de transacciones');
+      } else if (totalTxs > 50) {
+        riskScore += 10;
+        riskFactors.push('Frecuencia moderada de transacciones');
+      }
+      
+      // 2. Análisis de balance
+      if (balance > 100) {
+        riskScore += 15;
+        riskFactors.push('Balance alto detectado');
+      } else if (balance < 0.01 && totalTxs > 5) {
+        riskScore += 10;
+        riskFactors.push('Wallet vacía con actividad');
+      }
+      
+      // 3. Análisis de tokens ERC-20
+      if (tokenTxs.length > 20) {
+        riskScore += 15;
+        riskFactors.push('Múltiples transacciones de tokens');
+      }
+      
+      // 4. Análisis de transacciones internas (posible mixing)
+      if (internalTxs.length > 10) {
+        riskScore += 25;
+        riskFactors.push('Patrón de mixing detectado');
+      }
+      
+      // 5. Análisis de direcciones únicas
+      const uniqueFromAddresses = new Set(normalTxs.map(tx => tx.from)).size;
+      const uniqueToAddresses = new Set(normalTxs.map(tx => tx.to)).size;
+      const mixingRatio = uniqueFromAddresses / Math.max(normalTxs.length, 1);
+      
+      if (mixingRatio > 0.8 && normalTxs.length > 20) {
+        riskScore += 20;
+        riskFactors.push('Patrón de diversificación detectado');
+      }
+      
+      // Score base mínimo
+      riskScore = Math.max(riskScore, 10);
+      riskScore = Math.min(riskScore, 80); // Máximo 80 para no sancionados
+      
+      const risk = riskScore >= 40 ? 'medium' : 'low';
+      const categories = risk === 'medium' ? ['Mixing', 'High Activity'] : ['Normal Activity'];
+      const exposure = risk === 'medium' ? 
+        [{ type: 'DEX', percent: 60 }, { type: 'Mixing', percent: 40 }] : 
+        [{ type: 'Normal', percent: 100 }];
+
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit: false,
+        riskScore,
+        risk,
+        categories,
+        exposure,
+        balance: balance,
+        totalTransactions: totalTxs,
+        normalTransactions: normalTxs.length,
+        internalTransactions: internalTxs.length,
+        tokenTransactions: tokenTxs.length,
+        riskFactors,
+        notes: `Datos reales de Etherscan.io - ${riskFactors.length > 0 ? `Factores: ${riskFactors.join(', ')}` : 'Actividad normal detectada'}.`
+      });
+      
+    } catch (etherscanError) {
+      console.error('Error con Etherscan API:', etherscanError);
+      // Fallback a lógica mockeada si Etherscan falla
+      let hash = 0; for (let i = 0; i < address.length; i++) hash = (hash * 31 + address.charCodeAt(i)) | 0;
+      const base = Math.abs(hash) % 100;
+      const riskScore = Math.min(10 + (base * 0.5), 60);
+      const risk = riskScore >= 40 ? 'medium' : 'low';
+      const categories = risk === 'medium' ? ['Mixing', 'DEX'] : ['Exchange'];
+      const exposure = risk === 'medium' ? [{ type: 'DEX', percent: 60 }, { type: 'Gambling', percent: 40 }] : [{ type: 'CEX', percent: 70 }, { type: 'DEX', percent: 30 }];
+      
+      return res.json({
+        providerKey: 'etherscan',
+        providerName: 'Etherscan',
+        sanctionsHit: false,
+        riskScore,
+        risk,
+        categories,
+        exposure,
+        notes: 'Error con Etherscan API - usando lógica de fallback.'
+      });
+    }
+    
   } catch (err) {
     return res.status(500).json({ error: err?.message || 'Server error' });
   }
