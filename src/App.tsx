@@ -31,6 +31,7 @@ const PROVIDERS: ProviderDef[] = [
 ];
 
 const EXAMPLE_WALLETS = [
+  // ALTO RIESGO
   {
     address: '0x169AD27A470D064DEDE56a2D3ff727986b15D52B',
     name: 'Crypto Chueco',
@@ -48,6 +49,16 @@ const EXAMPLE_WALLETS = [
     color: 'text-red-400'
   },
   {
+    address: '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c',
+    name: 'Gas Killer',
+    risk: 'ALTO',
+    description: 'OFAC sancionada - Actividad ilícita',
+    emoji: '💀',
+    color: 'text-red-400'
+  },
+  
+  // MEDIO RIESGO
+  {
     address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
     name: 'Crypto Whale',
     risk: 'MEDIO',
@@ -63,6 +74,24 @@ const EXAMPLE_WALLETS = [
     emoji: '⛽',
     color: 'text-yellow-400'
   },
+  {
+    address: '0x7f367cc41522ce07553e823bf3be79a889debe1b',
+    name: 'Wallet Zombie',
+    risk: 'MEDIO',
+    description: 'Actividad automatizada, patrones repetitivos',
+    emoji: '🧟',
+    color: 'text-yellow-400'
+  },
+  {
+    address: '0x68749665ff8d2d112fa859aa293f07a622782f38',
+    name: 'NFT Enthusiast',
+    risk: 'MEDIO',
+    description: 'Alta actividad en NFTs, transacciones frecuentes',
+    emoji: '🖼️',
+    color: 'text-yellow-400'
+  },
+  
+  // BAJO RIESGO
   {
     address: '0xb5842F34d90b52cF6b970a781Dc74C5EDa37a07a',
     name: 'CryptoSaint',
@@ -87,6 +116,8 @@ const EXAMPLE_WALLETS = [
     emoji: '😇',
     color: 'text-green-400'
   },
+  
+  // BUILDER (MÁXIMA SEGURIDAD)
   {
     address: '0x690b9a9e9aa1c9db991c7721a92d351db4fac990',
     name: 'Block Builder',

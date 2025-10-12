@@ -408,11 +408,9 @@ app.post('/api/alchemy/analyze', async (req, res) => {
 
     // Verificar si la dirección está en listas de sanciones
     const sanctionedAddresses = [
-      '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c',
-      '0x7f367cc41522ce07553e823bf3be79a889debe1b',
-      '0x68749665ff8d2d112fa859aa293f07a622782f38',
-      '0x169AD27A470D064DEDE56a2D3ff727986b15D52B', // Tornado Cash
-      '0x0836222F2B2B24A3F36f98668Ed8F0B38D1a872f'  // Tornado Cash
+      '0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c', // Gas Killer
+      '0x169AD27A470D064DEDE56a2D3ff727986b15D52B', // Tornado Cash - Crypto Chueco
+      '0x0836222F2B2B24A3F36f98668Ed8F0B38D1a872f'  // Tornado Cash - Doña Tranza
     ];
     
     const isSanctioned = sanctionedAddresses.findIndex(addr => addr.toLowerCase() === address.toLowerCase()) !== -1;
@@ -487,7 +485,9 @@ app.post('/api/alchemy/analyze', async (req, res) => {
     // Wallets de medio riesgo conocidas - para ejemplos
     const mediumRiskWallets = [
       '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', // Crypto Whale
-      '0x8B3765eDA5207fB21690874B722ae276B96260e0'  // Gas Guzzler
+      '0x8B3765eDA5207fB21690874B722ae276B96260e0', // Gas Guzzler
+      '0x7f367cc41522ce07553e823bf3be79a889debe1b', // Wallet Zombie
+      '0x68749665ff8d2d112fa859aa293f07a622782f38'  // NFT Enthusiast
     ];
     
     const isMediumRiskWallet = mediumRiskWallets.findIndex(addr => addr.toLowerCase() === address.toLowerCase()) !== -1;
