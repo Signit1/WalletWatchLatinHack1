@@ -467,6 +467,20 @@ export default function App() {
               try {
                 const score = r.score || r.riskScore || 0;
                 const ofacHit = r.ofacHit || r.sanctionsHit || false;
+                
+                // Debug: Log para Etherscan específicamente
+                if (r.providerKey === 'etherscan') {
+                  console.log('🔍 Etherscan Debug:', {
+                    providerKey: r.providerKey,
+                    score: r.score,
+                    riskScore: r.riskScore,
+                    finalScore: score,
+                    risk: r.risk,
+                    ofacHit: ofacHit,
+                    notes: r.notes
+                  });
+                }
+                
                 const riskProfile = getRiskProfile(score, ofacHit, r.notes);
                 
                 // Validar que riskProfile no sea undefined
