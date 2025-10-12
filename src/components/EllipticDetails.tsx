@@ -8,7 +8,6 @@ function riskClass(risk: 'high' | 'medium' | 'low'): string {
 }
 
 export default function EllipticDetails({ data }: { data: EllipticAnalysisResponse }): React.JSX.Element {
-  console.log('🔍 EllipticDetails: Renderizando con datos:', data);
   
   try {
     return (

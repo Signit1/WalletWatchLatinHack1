@@ -11,7 +11,6 @@ export interface EllipticAnalysisResponse {
 
 export async function analyzeWithElliptic(address: string): Promise<EllipticAnalysisResponse> {
   try {
-    console.log('🔍 Elliptic: Iniciando análisis para', address);
     
     const res = await fetch('http://localhost:4000/api/elliptic/analyze', {
       method: 'POST',
@@ -19,7 +18,6 @@ export async function analyzeWithElliptic(address: string): Promise<EllipticAnal
       body: JSON.stringify({ address })
     });
     
-    console.log('🔍 Elliptic: Respuesta recibida', res.status, res.statusText);
     
     if (!res.ok) {
       const text = await res.text();
@@ -28,7 +26,6 @@ export async function analyzeWithElliptic(address: string): Promise<EllipticAnal
     }
     
     const data = await res.json();
-    console.log('✅ Elliptic: Datos recibidos', data);
     return data;
   } catch (error) {
     console.error('❌ Elliptic: Error completo', error);

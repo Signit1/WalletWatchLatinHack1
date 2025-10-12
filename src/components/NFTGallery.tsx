@@ -130,7 +130,6 @@ interface NFTGalleryItem {
 }
 
 export default function NFTGallery(): React.JSX.Element {
-  console.log('🖼️ NFTGallery component rendered');
   
   const [nfts, setNfts] = useState<NFTGalleryItem[]>([]);
   const [selectedNFT, setSelectedNFT] = useState<NFTGalleryItem | null>(null);
@@ -139,34 +138,16 @@ export default function NFTGallery(): React.JSX.Element {
 
   // Cargar NFTs del localStorage al montar el componente
   useEffect(() => {
-    console.log('🔄 NFTGallery: Cargando NFTs del localStorage...');
     loadNFTsFromStorage();
   }, []);
 
-  // Log cuando cambie el estado de NFTs
-  useEffect(() => {
-    console.log('📊 NFTGallery: Estado de NFTs actualizado:', nfts.length, 'NFTs');
-    nfts.forEach((nft, index) => {
-      console.log(`  NFT ${index + 1}:`, {
-        id: nft.id,
-        riskProfile: nft.data.riskProfile,
-        riskLevel: nft.data.riskLevel,
-        hasImage: !!nft.imageUrl,
-        imageUrlLength: nft.imageUrl?.length || 0
-      });
-    });
-  }, [nfts]);
 
   const loadNFTsFromStorage = () => {
     try {
       const savedNFTs = localStorage.getItem('walletwatch-nfts');
-      console.log('💾 NFTGallery: Cargando desde localStorage:', savedNFTs ? 'datos encontrados' : 'sin datos');
       if (savedNFTs) {
         const parsedNFTs = JSON.parse(savedNFTs);
-        console.log('📦 NFTGallery: NFTs parseados:', parsedNFTs.length, 'elementos');
         setNfts(parsedNFTs);
-      } else {
-        console.log('📭 NFTGallery: No hay NFTs guardados en localStorage');
       }
     } catch (error) {
       console.error('❌ NFTGallery: Error loading NFTs from storage:', error);
@@ -182,23 +163,19 @@ export default function NFTGallery(): React.JSX.Element {
   };
 
   const generateExampleNFT = async (exampleData: NFTImageData) => {
-    console.log('🎨 generateExampleNFT iniciado con:', exampleData);
     setIsGenerating(true);
     try {
       let imageUrl = '';
       let metadata = null;
 
       try {
-        console.log('🖼️ Generando imagen NFT con Canvas...');
         const result = await generateNFTImage(exampleData);
-        console.log('✅ Canvas generation successful:', result);
         imageUrl = result.imageUrl;
         metadata = result.metadata;
       } catch (error) {
         console.warn('❌ Canvas generation failed, using SVG fallback:', error);
         try {
           imageUrl = generateSimpleNFTImage(exampleData);
-          console.log('✅ SVG fallback successful:', imageUrl);
           metadata = {
             name: `Wallet Verification Certificate #${exampleData.tokenId}`,
             description: `Certificate of wallet verification and risk assessment for ${exampleData.walletAddress}`,
@@ -241,7 +218,6 @@ export default function NFTGallery(): React.JSX.Element {
         }
       }
 
-      console.log('📝 Creando NFT object con:', { imageUrl, metadata });
 
       const newNFT: NFTGalleryItem = {
         id: `nft-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -251,13 +227,11 @@ export default function NFTGallery(): React.JSX.Element {
         createdAt: new Date().toISOString()
       };
 
-      console.log('💾 Guardando NFT:', newNFT);
 
       const updatedNFTs = [...nfts, newNFT];
       setNfts(updatedNFTs);
       saveNFTsToStorage(updatedNFTs);
 
-      console.log('✅ NFT generado y guardado exitosamente');
       return newNFT;
     } catch (error) {
       console.error('❌ Error generating example NFT:', error);
@@ -268,7 +242,6 @@ export default function NFTGallery(): React.JSX.Element {
   };
 
   const generateExampleNFTs = async () => {
-    console.log('🎨 Iniciando generación de ejemplos de NFTs...');
     
     try {
       // Generar ejemplos con nombres correctos según el riesgo
@@ -312,13 +285,10 @@ export default function NFTGallery(): React.JSX.Element {
         }
       ];
 
-      console.log('📝 Ejemplos a generar:', examples);
 
       for (const example of examples) {
-        console.log(`🔄 Generando NFT para ${example.riskLevel} risk:`, example);
         try {
           await generateExampleNFT(example);
-          console.log(`✅ NFT ${example.riskLevel} generado exitosamente`);
           // Pequeño delay para evitar problemas de concurrencia
           await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
@@ -327,7 +297,6 @@ export default function NFTGallery(): React.JSX.Element {
         }
       }
       
-      console.log('✅ Generación de ejemplos completada');
     } catch (error) {
       console.error('❌ Error en generateExampleNFTs:', error);
     }
@@ -408,7 +377,6 @@ export default function NFTGallery(): React.JSX.Element {
           </button>
           <button
             onClick={async () => {
-              console.log('🧪 Probando generación de imagen LOW RISK...');
               try {
                 const testData = {
                   walletAddress: '0x1234567890123456789012345678901234567890',
@@ -420,7 +388,6 @@ export default function NFTGallery(): React.JSX.Element {
                   tokenId: 9999
                 };
                 const result = await generateNFTImage(testData);
-                console.log('✅ Test LOW RISK successful:', result);
                 alert('Test LOW RISK exitoso! Revisa la consola para ver los detalles.');
               } catch (error) {
                 console.error('❌ Test LOW RISK failed:', error);
@@ -433,7 +400,6 @@ export default function NFTGallery(): React.JSX.Element {
           </button>
           <button
             onClick={async () => {
-              console.log('🧪 Probando generación de imagen MEDIUM RISK...');
               try {
                 const testData = {
                   walletAddress: '0x1234567890123456789012345678901234567890',
@@ -445,7 +411,6 @@ export default function NFTGallery(): React.JSX.Element {
                   tokenId: 9998
                 };
                 const result = await generateNFTImage(testData);
-                console.log('✅ Test MEDIUM RISK successful:', result);
                 alert('Test MEDIUM RISK exitoso! Revisa la consola para ver los detalles.');
               } catch (error) {
                 console.error('❌ Test MEDIUM RISK failed:', error);

@@ -526,28 +526,18 @@ app.post('/api/alchemy/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    console.log(`🔍 DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBlockBuilder: ${isBlockBuilder}, isKnownBuilder: ${isKnownBuilder}, isKnownBuilderFromProfile: ${isKnownBuilderFromProfile}, score before corrections: ${score}`);
     
     // APLICAR CORRECCIONES DESPUÉS del score base mínimo
     // PRIORIDAD: Medio riesgo > Builders > Famosas
     if (isMediumRiskWallet) {
       score = 55; // Forzar riesgo medio para estas wallets específicas
-      console.log(`🔍 DEBUG: Medium risk wallet detected, score set to 55`);
     } else if (isBlockBuilder || isKnownBuilder || isKnownBuilderFromProfile) {
       score = 5; // Riesgo mínimo para Builders
-      console.log(`🔍 DEBUG: Builder detected, score set to 5`);
     } else if (isFamousWallet) {
       score = Math.min(score, 30); // Máximo riesgo bajo para wallets famosas
-      console.log(`🔍 DEBUG: Famous wallet detected, score set to ${score}`);
-    } else {
-      console.log(`🔍 DEBUG: No special wallet detected, keeping score: ${score}`);
     }
     
-    console.log(`🔍 DEBUG: Final score: ${score}`);
-    
     const risk = ofacHit ? 'high' : score >= 40 ? 'medium' : 'low';
-    
-    console.log(`🔍 DEBUG: Final risk: ${risk}, score: ${score}, ofacHit: ${ofacHit}`);
 
     return res.json({
       providerKey: 'alchemy',
@@ -599,9 +589,6 @@ app.post('/api/elliptic/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    console.log(`🔍 ELLIPTIC DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
-    console.log(`🔍 ELLIPTIC DEBUG: riskProfile:`, riskProfile);
-    console.log(`🔍 ELLIPTIC DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
     
     // Ajustar riesgo si está sancionado
     const finalRisk = sanctionsHit ? 'high' : risk;
@@ -756,8 +743,6 @@ app.post('/api/chainalysis/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    console.log(`🔍 CHAINALYSIS DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
-    console.log(`🔍 CHAINALYSIS DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
     
     // Ajustar riesgo si está sancionado
     const finalRisk = sanctionsHit ? 'high' : risk;
@@ -789,7 +774,6 @@ app.post('/api/etherscan/analyze', async (req, res) => {
       return res.status(400).json({ error: 'Invalid address' });
     }
 
-    console.log(`🔍 Etherscan: Analizando ${address}`);
 
     // Verificar si la dirección está en listas de sanciones
     const sanctionedAddresses = [
@@ -804,15 +788,12 @@ app.post('/api/etherscan/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
-    console.log(`🔍 ETHERSCAN DEBUG: ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
-    console.log(`🔍 ETHERSCAN DEBUG: Final riskScore: ${riskScore}, risk: ${risk}`);
     
     // Ajustar riesgo si está sancionado
     const finalRisk = sanctionsHit ? 'high' : risk;
 
     // Si no hay API key, usar datos simulados
     if (!ETHERSCAN_API_KEY || ETHERSCAN_API_KEY === 'YourApiKeyToken') {
-      console.log('🔍 Etherscan: Usando datos simulados (no hay API key)');
       
       return res.json({
         providerKey: 'etherscan',
@@ -834,7 +815,6 @@ app.post('/api/etherscan/analyze', async (req, res) => {
     }
 
     // Llamadas reales a Etherscan API
-    console.log('🔍 Etherscan: Haciendo llamadas reales a la API');
     
     try {
       // 1. Obtener balance de ETH (API V2 con chainid)

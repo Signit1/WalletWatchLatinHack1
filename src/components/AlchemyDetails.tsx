@@ -14,7 +14,6 @@ function formatWeiToEth(weiHex: string): string {
 }
 
 export default function AlchemyDetails({ data }: { data: AlchemyAnalysisResponse }): React.JSX.Element {
-  console.log('🔍 AlchemyDetails: Renderizando con datos:', data);
   
   try {
     return (
@@ -28,7 +27,6 @@ export default function AlchemyDetails({ data }: { data: AlchemyAnalysisResponse
               <div className="font-semibold">ERC-20 (top 5)</div>
               <ul className="list-disc ml-5 mt-1 space-y-1">
                 {data.erc20Balances.slice(0, 5).map((t, i) => {
-                  console.log('🔍 Renderizando token:', t);
                   return (
                     <li key={`${t.contractAddress}-${i}`}>
                       {t.contractAddress?.slice(0, 6)}…{t.contractAddress?.slice(-4)} — {t.tokenBalance || '0'}
@@ -54,7 +52,6 @@ export default function AlchemyDetails({ data }: { data: AlchemyAnalysisResponse
           <div className="font-semibold mb-1">Últimas transferencias</div>
           <ul className="space-y-1">
             {data.transfersPreview.slice(0, 5).map((t, i) => {
-              console.log('🔍 Renderizando transferencia:', t);
               return (
                 <li key={`${t.hash}-${i}`} className="break-all">
                   <span className="font-semibold">{t.category || 'transferencia'}:</span> {t.from?.slice(0,6)}… → {t.to?.slice(0,6)}… {t.value ? `(${t.value} ${t.asset || ''})` : ''}

@@ -2,7 +2,6 @@ import React from 'react';
 import { EtherscanAnalysisResponse } from '../lib/etherscan';
 
 export default function EtherscanDetails({ data }: { data: EtherscanAnalysisResponse }): React.JSX.Element {
-  console.log('🔍 EtherscanDetails: Renderizando con datos:', data);
   try {
     return (
       <div className="mt-3 text-sm space-y-2">
