@@ -10,6 +10,7 @@ import AlchemyDetailsWrapper from './components/AlchemyDetailsWrapper';
 import EtherscanDetailsWrapper from './components/EtherscanDetailsWrapper';
 
 type ProviderKey = 'alchemy' | 'elliptic' | 'ofac' | 'chainalysis' | 'etherscan';
+type TabKey = 'analyze' | 'examples';
 
 interface ProviderDef { key: ProviderKey; name: string }
 interface ProviderResult {
@@ -27,6 +28,81 @@ const PROVIDERS: ProviderDef[] = [
   { key: 'ofac', name: 'OFAC' },
   { key: 'chainalysis', name: 'Chainalysis' },
   { key: 'etherscan', name: 'Etherscan' }
+];
+
+const EXAMPLE_WALLETS = [
+  {
+    address: '0x169AD27A470D064DEDE56a2D3ff727986b15D52B',
+    name: 'Tornado Cash - Wallet Principal',
+    risk: 'ALTO',
+    description: 'OFAC sancionada - Tornado Cash',
+    emoji: '❌',
+    color: 'text-red-400'
+  },
+  {
+    address: '0x0836222F2B2B24A3F36f98668Ed8F0B38D1a872f',
+    name: 'Tornado Cash - Wallet Secundaria',
+    risk: 'ALTO',
+    description: 'OFAC sancionada - Tornado Cash',
+    emoji: '❌',
+    color: 'text-red-400'
+  },
+  {
+    address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+    name: 'Wallet con Alta Actividad',
+    risk: 'MEDIO',
+    description: 'Múltiples transacciones, tokens ERC-20',
+    emoji: '🖼️',
+    color: 'text-yellow-400'
+  },
+  {
+    address: '0x8B3765eDA5207fB21690874B722ae276B96260e0',
+    name: 'Wallet con Patrón de Mixing',
+    risk: 'MEDIO',
+    description: 'Transacciones internas, patrones sospechosos',
+    emoji: '⛽',
+    color: 'text-yellow-400'
+  },
+  {
+    address: '0xb5842F34d90b52cF6b970a781Dc74C5EDa37a07a',
+    name: 'Wallet Normal',
+    risk: 'BAJO',
+    description: '1 transacción, balance bajo',
+    emoji: '😇',
+    color: 'text-green-400'
+  },
+  {
+    address: '0xab5801a7d398351b8be11c439e05c5b3259aec9b',
+    name: 'Vitalik Buterin',
+    risk: 'BAJO',
+    description: 'Wallet famosa reconocida',
+    emoji: '😇',
+    color: 'text-green-400'
+  },
+  {
+    address: '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE',
+    name: 'Binance Hot Wallet',
+    risk: 'BAJO',
+    description: 'Exchange reconocido',
+    emoji: '😇',
+    color: 'text-green-400'
+  },
+  {
+    address: '0x690b9a9e9aa1c9db991c7721a92d351db4fac990',
+    name: 'Flashbots Builder',
+    risk: 'BAJO',
+    description: 'Builder de bloques reconocido',
+    emoji: '🏗️',
+    color: 'text-blue-400'
+  },
+  {
+    address: '0x0000000000000000000000000000000000000000',
+    name: 'Genesis Address',
+    risk: 'BAJO',
+    description: 'Dirección genesis de Ethereum',
+    emoji: '🏗️',
+    color: 'text-blue-400'
+  }
 ];
 
 function pseudoRandomIntFromString(input: string, maxExclusive: number): number {
@@ -185,6 +261,7 @@ export default function App() {
   const [results, setResults] = useState(null);
   const [debugLogs, setDebugLogs] = useState([]);
   const [criticalError, setCriticalError] = useState(null);
+  const [activeTab, setActiveTab] = useState('analyze' as TabKey);
 
   const overall = useMemo(() => results ? aggregateOverall(results) : null, [results]);
 
@@ -195,6 +272,13 @@ export default function App() {
     } catch (error) {
       console.error('Error agregando log:', error);
     }
+  }
+
+  function selectExampleWallet(walletAddress: string) {
+    setAddress(walletAddress);
+    setActiveTab('analyze');
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   // Log cuando se actualizan los resultados
@@ -415,8 +499,86 @@ export default function App() {
       </header>
 
       <main className="max-w-5xl mx-auto p-4 relative z-10">
-        <section className="card-enhanced rounded-xl p-6 hover-glow">
-          <form onSubmit={onAnalyze} className="space-y-3" autoComplete="off">
+        {/* Pestañas */}
+        <div className="flex space-x-1 mb-6 bg-gray-800/50 p-1 rounded-lg">
+          <button
+            onClick={() => setActiveTab('analyze')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'analyze'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            🔍 Análisis
+          </button>
+          <button
+            onClick={() => setActiveTab('examples')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'examples'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            📋 Ejemplos
+          </button>
+        </div>
+        {/* Contenido de pestañas */}
+        {activeTab === 'examples' ? (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-2">Ejemplos de Wallets para Probar</h2>
+              <p className="text-muted mb-4">
+                💡 Instrucciones: Selecciona una wallet de la lista para probar el sistema. 
+                La aplicación cambiará automáticamente a la pestaña de análisis con la wallet seleccionada.
+              </p>
+              <p className="text-sm text-gray-400">
+                📝 Nota: Además de estos ejemplos, puedes analizar cualquier wallet de Ethereum
+                ingresando su dirección en la pestaña de análisis.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {EXAMPLE_WALLETS.map((wallet, index) => (
+                <div
+                  key={wallet.address}
+                  onClick={() => selectExampleWallet(wallet.address)}
+                  className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 cursor-pointer hover:bg-gray-700/50 hover:border-gray-600 transition-all duration-200 group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{wallet.emoji}</span>
+                      <div>
+                        <h3 className="font-semibold text-white group-hover:text-blue-300 transition-colors">
+                          {wallet.name}
+                        </h3>
+                        <p className={`text-sm font-medium ${wallet.color}`}>
+                          {wallet.risk} RIESGO
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-400 mb-3">
+                    {wallet.description}
+                  </p>
+                  
+                  <div className="bg-gray-900/50 rounded-lg p-2 font-mono text-xs text-gray-300 break-all">
+                    {wallet.address}
+                  </div>
+                  
+                  <div className="mt-3 text-center">
+                    <span className="text-blue-400 text-sm font-medium group-hover:text-blue-300">
+                      👆 Haz clic para analizar
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            <section className="card-enhanced rounded-xl p-6 hover-glow">
+            <form onSubmit={onAnalyze} className="space-y-3" autoComplete="off">
             <label htmlFor="wallet" className="block text-muted">Wallet address</label>
             <div className="flex gap-2">
               <input
@@ -561,6 +723,8 @@ export default function App() {
             <div className="inline-flex items-center"><span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block mr-2"></span> 🏗️ Builder (Block Builder - Máxima Seguridad)</div>
           </div>
         </section>
+          </>
+        )}
       </main>
 
       {/* Sección de Debug Logs */}
