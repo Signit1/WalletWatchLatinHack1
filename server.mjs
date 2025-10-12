@@ -526,6 +526,8 @@ app.post('/api/alchemy/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
+    // Log para debugging del servidor (no visible en pantalla)
+    console.log(`🔍 Alchemy: Analizando ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
     
     // APLICAR CORRECCIONES DESPUÉS del score base mínimo
     // PRIORIDAD: Medio riesgo > Builders > Famosas
@@ -589,6 +591,8 @@ app.post('/api/elliptic/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
+    // Log para debugging del servidor (no visible en pantalla)
+    console.log(`🔍 Elliptic: Analizando ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
     
     // Ajustar riesgo si está sancionado
     const finalRisk = sanctionsHit ? 'high' : risk;
@@ -743,6 +747,8 @@ app.post('/api/chainalysis/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
+    // Log para debugging del servidor (no visible en pantalla)
+    console.log(`🔍 Chainalysis: Analizando ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
     
     // Ajustar riesgo si está sancionado
     const finalRisk = sanctionsHit ? 'high' : risk;
@@ -788,6 +794,8 @@ app.post('/api/etherscan/analyze', async (req, res) => {
     const riskProfile = getWalletRiskProfile(address);
     const { score: riskScore, risk, isFamousWallet, isMediumRiskWallet, isBuilder: isKnownBuilderFromProfile } = riskProfile;
     
+    // Log para debugging del servidor (no visible en pantalla)
+    console.log(`🔍 Etherscan: Analizando ${address} - isFamousWallet: ${isFamousWallet}, isMediumRiskWallet: ${isMediumRiskWallet}, isBuilder: ${isKnownBuilderFromProfile}`);
     
     // Ajustar riesgo si está sancionado
     const finalRisk = sanctionsHit ? 'high' : risk;

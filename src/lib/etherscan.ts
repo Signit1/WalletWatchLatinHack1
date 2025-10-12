@@ -15,6 +15,9 @@ export interface EtherscanAnalysisResponse {
 
 export async function analyzeWithEtherscan(address: string): Promise<EtherscanAnalysisResponse> {
   try {
+    // Log para debugging (solo en consola del navegador, no visible en pantalla)
+    console.log('🔍 Etherscan: Iniciando análisis para', address);
+    
     const res = await fetch('http://localhost:4000/api/etherscan/analyze', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

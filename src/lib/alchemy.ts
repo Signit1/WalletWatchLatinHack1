@@ -14,6 +14,8 @@ export interface AlchemyAnalysisResponse {
 
 export async function analyzeWithAlchemy(address: string): Promise<AlchemyAnalysisResponse> {
   try {
+    // Log para debugging (solo en consola del navegador, no visible en pantalla)
+    console.log('🔍 Alchemy: Iniciando análisis para', address);
     
     const res = await fetch('http://localhost:4000/api/alchemy/analyze', {
       method: 'POST',

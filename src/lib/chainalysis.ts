@@ -11,6 +11,8 @@ export interface ChainalysisAnalysisResponse {
 
 export async function analyzeWithChainalysis(address: string): Promise<ChainalysisAnalysisResponse> {
   try {
+    // Log para debugging (solo en consola del navegador, no visible en pantalla)
+    console.log('🔍 Chainalysis: Iniciando análisis para', address);
     
     const res = await fetch('http://localhost:4000/api/chainalysis/analyze', {
       method: 'POST',
