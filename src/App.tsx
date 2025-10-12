@@ -277,10 +277,24 @@ export default function App() {
   function selectExampleWallet(walletAddress: string) {
     setAddress(walletAddress);
     setResults(null); // Limpiar resultados anteriores
+    setDebugLogs([]); // Limpiar logs de debug
+    setCriticalError(null); // Limpiar errores críticos
     setActiveTab('analyze');
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  // Limpiar resultados cuando se cambie a la pestaña de análisis
+  React.useEffect(() => {
+    if (activeTab === 'analyze') {
+      // Solo limpiar si no hay dirección o si la dirección está vacía
+      if (!address || address.trim() === '') {
+        setResults(null);
+        setDebugLogs([]);
+        setCriticalError(null);
+      }
+    }
+  }, [activeTab, address]);
 
   // Log cuando se actualizan los resultados
   React.useEffect(() => {
