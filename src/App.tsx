@@ -122,7 +122,7 @@ const EXAMPLE_WALLETS = [
     address: '0x690b9a9e9aa1c9db991c7721a92d351db4fac990',
     name: 'Block Builder',
     risk: 'BAJO',
-    description: 'Flashbots Builder - Máxima Seguridad',
+    description: 'Flashbots Builder - flashbots.eth (Máxima Seguridad)',
     emoji: '🏗️',
     color: 'text-blue-400'
   },
@@ -130,7 +130,7 @@ const EXAMPLE_WALLETS = [
     address: '0x0000000000000000000000000000000000000000',
     name: 'Block Builder',
     risk: 'BAJO',
-    description: 'Genesis Address - Máxima Seguridad',
+    description: 'Genesis Address - Ethereum Foundation (Máxima Seguridad)',
     emoji: '🏗️',
     color: 'text-blue-400'
   }

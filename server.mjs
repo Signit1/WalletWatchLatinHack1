@@ -284,6 +284,21 @@ app.get('/api/ofac/stats', (req, res) => {
   });
 });
 
+// Función para obtener descripción detallada de builders
+function getBuilderDescription(address) {
+  const addrLc = address.toLowerCase();
+  
+  if (addrLc === '0x0000000000000000000000000000000000000000') {
+    return 'Genesis Address - Ethereum Foundation (Máxima Seguridad)';
+  } else if (addrLc === '0x690b9a9e9aa1c9db991c7721a92d351db4fac990') {
+    return 'Flashbots Builder - flashbots.eth (Máxima Seguridad)';
+  } else if (['0x81beef03aafd3dd33ffd7deb337407142c80fea3', '0x95222290dd7278aa3ddd389cc1e1d165cc4bafe5', '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97'].includes(addrLc)) {
+    return 'Builder0x69 - builder0x69.eth (Máxima Seguridad)';
+  } else {
+    return 'Builder detectado - constructor de bloques (muy seguro)';
+  }
+}
+
 app.post('/api/alchemy/analyze', async (req, res) => {
   try {
     const { address } = req.body || {};
@@ -396,11 +411,11 @@ app.post('/api/alchemy/analyze', async (req, res) => {
 
     // Lista de Builders conocidos (MEV Builders principales)
     const knownBuilders = [
-      '0x0000000000000000000000000000000000000000', // Genesis
-      '0x690b9a9e9aa1c9db991c7721a92d351db4fac990', // Flashbots Builder
-      '0x81beef03aafd3dd33ffd7deb337407142c80fea3', // Builder0x69
-      '0x95222290dd7278aa3ddd389cc1e1d165cc4bafe5', // Builder0x69
-      '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97', // Builder0x69
+      '0x0000000000000000000000000000000000000000', // Genesis Address (Ethereum Foundation)
+      '0x690b9a9e9aa1c9db991c7721a92d351db4fac990', // Flashbots Builder (flashbots.eth)
+      '0x81beef03aafd3dd33ffd7deb337407142c80fea3', // Builder0x69 (builder0x69.eth)
+      '0x95222290dd7278aa3ddd389cc1e1d165cc4bafe5', // Builder0x69 (builder0x69.eth)
+      '0x4838b106fce9647bdf1e7877bf73ce8b0bad5f97', // Builder0x69 (builder0x69.eth)
       '0x0b7c6c7d2b8b8b8b8b8b8b8b8b8b8b8b8b8b8b8b'  // Otros builders conocidos
     ];
     
@@ -515,7 +530,7 @@ app.post('/api/alchemy/analyze', async (req, res) => {
       ofacHit,
       risk,
       notes: isSanctioned ? 'DIRECCIÓN SANCIONADA DETECTADA - NO INTERACTUAR.' :
-             isBuilder || isKnownBuilder ? 'Builder detectado - constructor de bloques (muy seguro).' : 
+             isBuilder || isKnownBuilder ? getBuilderDescription(address) : 
              isFamousWallet ? 'Wallet famosa reconocida - datos reales de Alchemy.' : 
              riskFactors.length > 0 ? `Factores de riesgo: ${riskFactors.join(', ')}` :
              'Datos reales de Alchemy (balance y últimas transferencias).'
