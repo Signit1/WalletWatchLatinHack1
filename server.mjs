@@ -896,16 +896,59 @@ app.post('/api/etherscan/analyze', async (req, res) => {
     
     const isFamousWallet = famousWallets.includes(addrLc);
     if (isFamousWallet) {
-      return res.json({
-        providerKey: 'etherscan',
-        providerName: 'Etherscan',
-        sanctionsHit: false,
-        riskScore: 25,
-        risk: 'low',
-        categories: ['Exchange', 'Famous Wallet'],
-        exposure: [{ type: 'CEX', percent: 80 }, { type: 'DEX', percent: 20 }],
-        notes: 'Wallet famosa reconocida - Consistente con Alchemy.'
-      });
+      // Para wallets famosas, también obtener datos reales de Etherscan
+      try {
+        // Obtener balance de ETH (API V2 con chainid)
+        const balanceResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=balance&address=${address}&tag=latest&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+        const balanceData = await balanceResponse.json();
+        
+        // Obtener transacciones normales (API V2 con chainid)
+        const txResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+        const txData = await txResponse.json();
+        
+        // Obtener transacciones internas (API V2 con chainid)
+        const internalTxResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=txlistinternal&address=${address}&startblock=0&endblock=99999999&page=1&offset=5&sort=desc&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+        const internalTxData = await internalTxResponse.json();
+        
+        // Obtener tokens ERC-20 (API V2 con chainid)
+        const tokenResponse = await fetch(`https://api.etherscan.io/v2/api?module=account&action=tokentx&address=${address}&startblock=0&endblock=99999999&page=1&offset=10&sort=desc&chainid=1&apikey=${ETHERSCAN_API_KEY}`);
+        const tokenData = await tokenResponse.json();
+
+        const balance = balanceData.result ? parseInt(balanceData.result) / 1e18 : 0;
+        const normalTxs = txData.result || [];
+        const internalTxs = internalTxData.result || [];
+        const tokenTxs = tokenData.result || [];
+        
+        const totalTxs = normalTxs.length + internalTxs.length + tokenTxs.length;
+
+        return res.json({
+          providerKey: 'etherscan',
+          providerName: 'Etherscan',
+          sanctionsHit: false,
+          riskScore: 25,
+          risk: 'low',
+          categories: ['Exchange', 'Famous Wallet'],
+          exposure: [{ type: 'CEX', percent: 80 }, { type: 'DEX', percent: 20 }],
+          balance: balance,
+          totalTransactions: totalTxs,
+          normalTransactions: normalTxs.length,
+          internalTransactions: internalTxs.length,
+          tokenTransactions: tokenTxs.length,
+          notes: 'Wallet famosa reconocida - Datos reales de Etherscan.io.'
+        });
+      } catch (error) {
+        // Si falla la API, usar datos básicos
+        return res.json({
+          providerKey: 'etherscan',
+          providerName: 'Etherscan',
+          sanctionsHit: false,
+          riskScore: 25,
+          risk: 'low',
+          categories: ['Exchange', 'Famous Wallet'],
+          exposure: [{ type: 'CEX', percent: 80 }, { type: 'DEX', percent: 20 }],
+          notes: 'Wallet famosa reconocida - Error obteniendo datos de Etherscan.'
+        });
+      }
     }
 
     // Para otras direcciones, usar datos reales de Etherscan
@@ -968,11 +1011,11 @@ app.post('/api/etherscan/analyze', async (req, res) => {
       }
       
       // 5. Análisis de direcciones únicas
-      const uniqueFromAddresses = new Set(normalTxs.map(tx => tx.from)).size;
-      const uniqueToAddresses = new Set(normalTxs.map(tx => tx.to)).size;
-      const mixingRatio = uniqueFromAddresses / Math.max(normalTxs.length, 1);
+      const uniqueFromAddresses = Array.isArray(normalTxs) ? new Set(normalTxs.map(tx => tx.from)).size : 0;
+      const uniqueToAddresses = Array.isArray(normalTxs) ? new Set(normalTxs.map(tx => tx.to)).size : 0;
+      const mixingRatio = uniqueFromAddresses / Math.max(normalTxs.length || 1, 1);
       
-      if (mixingRatio > 0.8 && normalTxs.length > 20) {
+      if (mixingRatio > 0.8 && (normalTxs.length || 0) > 20) {
         riskScore += 20;
         riskFactors.push('Patrón de diversificación detectado');
       }
