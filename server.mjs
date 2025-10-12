@@ -484,9 +484,19 @@ app.post('/api/alchemy/analyze', async (req, res) => {
     
     const isFamousWallet = famousWallets.includes(address.toLowerCase());
     
+    // Wallets de medio riesgo conocidas - para ejemplos
+    const mediumRiskWallets = [
+      '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6', // Crypto Whale
+      '0x8B3765eDA5207fB21690874B722ae276B96260e0'  // Gas Guzzler
+    ];
+    
+    const isMediumRiskWallet = mediumRiskWallets.findIndex(addr => addr.toLowerCase() === address.toLowerCase()) !== -1;
+    
     // Builders son siempre seguros - riesgo muy bajo
     if (isBuilder || isKnownBuilder) {
       score = 5; // Riesgo mínimo para Builders
+    } else if (isMediumRiskWallet) {
+      score = 50; // Score de medio riesgo para ejemplos
     } else if (isFamousWallet) {
       score = Math.min(score, 30); // Máximo riesgo bajo para wallets famosas
     }

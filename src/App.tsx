@@ -33,7 +33,7 @@ const PROVIDERS: ProviderDef[] = [
 const EXAMPLE_WALLETS = [
   {
     address: '0x169AD27A470D064DEDE56a2D3ff727986b15D52B',
-    name: 'Tornado Cash - Wallet Principal',
+    name: 'Crypto Chueco',
     risk: 'ALTO',
     description: 'OFAC sancionada - Tornado Cash',
     emoji: '❌',
@@ -41,7 +41,7 @@ const EXAMPLE_WALLETS = [
   },
   {
     address: '0x0836222F2B2B24A3F36f98668Ed8F0B38D1a872f',
-    name: 'Tornado Cash - Wallet Secundaria',
+    name: 'Doña Tranza',
     risk: 'ALTO',
     description: 'OFAC sancionada - Tornado Cash',
     emoji: '❌',
@@ -49,15 +49,15 @@ const EXAMPLE_WALLETS = [
   },
   {
     address: '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
-    name: 'Wallet con Alta Actividad',
+    name: 'Crypto Whale',
     risk: 'MEDIO',
     description: 'Múltiples transacciones, tokens ERC-20',
-    emoji: '🖼️',
+    emoji: '🐋',
     color: 'text-yellow-400'
   },
   {
     address: '0x8B3765eDA5207fB21690874B722ae276B96260e0',
-    name: 'Wallet con Patrón de Mixing',
+    name: 'Gas Guzzler',
     risk: 'MEDIO',
     description: 'Transacciones internas, patrones sospechosos',
     emoji: '⛽',
@@ -65,7 +65,7 @@ const EXAMPLE_WALLETS = [
   },
   {
     address: '0xb5842F34d90b52cF6b970a781Dc74C5EDa37a07a',
-    name: 'Wallet Normal',
+    name: 'CryptoSaint',
     risk: 'BAJO',
     description: '1 transacción, balance bajo',
     emoji: '😇',
@@ -73,33 +73,33 @@ const EXAMPLE_WALLETS = [
   },
   {
     address: '0xab5801a7d398351b8be11c439e05c5b3259aec9b',
-    name: 'Vitalik Buterin',
+    name: 'DeFi Explorer',
     risk: 'BAJO',
-    description: 'Wallet famosa reconocida',
+    description: 'Vitalik Buterin - Wallet famosa reconocida',
     emoji: '😇',
     color: 'text-green-400'
   },
   {
     address: '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE',
-    name: 'Binance Hot Wallet',
+    name: 'Token Collector',
     risk: 'BAJO',
-    description: 'Exchange reconocido',
+    description: 'Binance Hot Wallet - Exchange reconocido',
     emoji: '😇',
     color: 'text-green-400'
   },
   {
     address: '0x690b9a9e9aa1c9db991c7721a92d351db4fac990',
-    name: 'Flashbots Builder',
+    name: 'Block Builder',
     risk: 'BAJO',
-    description: 'Builder de bloques reconocido',
+    description: 'Flashbots Builder - Máxima Seguridad',
     emoji: '🏗️',
     color: 'text-blue-400'
   },
   {
     address: '0x0000000000000000000000000000000000000000',
-    name: 'Genesis Address',
+    name: 'Block Builder',
     risk: 'BAJO',
-    description: 'Dirección genesis de Ethereum',
+    description: 'Genesis Address - Máxima Seguridad',
     emoji: '🏗️',
     color: 'text-blue-400'
   }
