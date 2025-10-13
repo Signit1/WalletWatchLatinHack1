@@ -310,6 +310,14 @@ export default function App() {
 
   const overall = useMemo(() => results ? aggregateOverall(results) : null, [results]);
 
+  // Auto-populate wallet address when connected
+  React.useEffect(() => {
+    if (isConnected && account && !address) {
+      setAddress(account);
+      addDebugLog(`🔗 Wallet conectada: ${account}`);
+    }
+  }, [isConnected, account, address]);
+
   function addDebugLog(message: string) {
     try {
       const timestamp = new Date().toLocaleTimeString();
@@ -693,7 +701,14 @@ export default function App() {
             <>
               <section className="card-enhanced rounded-xl p-6 hover-glow">
                 <form onSubmit={onAnalyze} className="space-y-3" autoComplete="off">
-                  <label htmlFor="wallet" className="block text-muted">Wallet address</label>
+                  <label htmlFor="wallet" className="block text-muted">
+                    Wallet address
+                    {isConnected && account && address === account && (
+                      <span className="ml-2 text-green-400 text-sm">
+                        🔗 Desde wallet conectada
+                      </span>
+                    )}
+                  </label>
                   <div className="flex gap-2">
                     <input
                       id="wallet"
@@ -702,7 +717,10 @@ export default function App() {
                       placeholder="0x... o dirección compatible"
                       minLength={6}
                       required
-                      className="flex-1 bg-[#0f1523] border border-[#263042] rounded-lg px-3 py-3 outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
+                      className={`flex-1 bg-[#0f1523] border rounded-lg px-3 py-3 outline-none focus:ring-2 focus:ring-primary/30 ${isConnected && account && address === account
+                        ? 'border-green-500/50 focus:border-green-500'
+                        : 'border-[#263042] focus:border-primary'
+                        }`}
                     />
                     <button
                       type="submit"
@@ -710,6 +728,22 @@ export default function App() {
                       className="bg-primary text-white rounded-lg px-4 py-3 disabled:opacity-60"
                     >{loading ? 'Analizando...' : 'Analizar wallet'}</button>
                   </div>
+
+                  {/* Quick wallet address button */}
+                  {isConnected && account && address !== account && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddress(account);
+                          addDebugLog(`🔄 Cambiando a wallet conectada: ${account}`);
+                        }}
+                        className="inline-flex items-center gap-2 text-sm text-green-400 hover:text-green-300 transition-colors"
+                      >
+                        🔗 Usar wallet conectada ({account.slice(0, 6)}...{account.slice(-4)})
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-3 text-muted mt-2">
                     <span>Fuentes de análisis</span>
